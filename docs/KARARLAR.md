@@ -41,6 +41,17 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - Sprint günü uygulama saat diliminde (`Europe/Istanbul`) takvim gününe göre hesaplanır; başlangıç günü 1. gün.
 - Tema: sprint süresi üç eşit dilime bölünür, `ceil(gün * 3 / süre)` → 1 mavi, 2 kehribar, 3 kırmızı. Kökte `<html data-theme>`.
 
+### Aşama 1 kalite kapısında düzeltilenler
+- Kullanıcı adı doğrulaması küçük harfe çevrildikten sonra yapılıyor (`validationOrder: post-normalization`); aksi halde "AYSE" ile giriş 422 alıyordu (test-writer buldu).
+- Başvuru onayında tek kullanımlık bağlantı, `revalidatePath` listeyi yenileyince kartla birlikte kayboluyordu; karar sonucu artık üst bileşende tutuluyor (tarayıcıda uçtan uca denemede bulundu).
+- Bekleyen sayacı için kişisel veri çekmeyen `countPendingApplications` eklendi (her sekme açılışında sahte `personal_data.view` kaydı yazılıyordu).
+- **package-lock.json Linux'ta üretilmeli**: Windows'taki npm, argon2'nin wasm yedeğinin `@emnapi/*` bağımlılıklarını kilit dosyasına yazmıyor ve Docker'da `npm ci` düşüyor. Bağımlılık değişince:
+  `docker run --rm -v "${PWD}:/w" -w /w node:24-bookworm-slim npm install --package-lock-only --ignore-scripts`
+
+### Dağıtım
+- `docker-compose.prod.yml`: `db` → `migrate` (göçleri uygulayıp çıkar) → `app` (standalone, `node` kullanıcısı) → `caddy` (otomatik HTTPS). Yalnız Caddy port açar; `X-Forwarded-For` Caddy tarafından gerçek IP ile yeniden yazılır (hız sınırı buna güvenir).
+- Debian slim taban imaj (argon2 yerel modülü glibc ister).
+
 ### Ertelenen
 - Gerçek zamanlı iletişim (Aşama 4): PostgreSQL LISTEN/NOTIFY + Server-Sent Events planlanıyor (tek sunucu, ek servis yok).
 - Zamanlayıcı (Aşama 3): pg-boss (PostgreSQL üzerinde, ek altyapı gerektirmez) planlanıyor.

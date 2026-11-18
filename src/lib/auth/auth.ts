@@ -71,6 +71,8 @@ export const auth = betterAuth({
       minUsernameLength: 3,
       maxUsernameLength: 30,
       usernameValidator: (u) => USERNAME_PATTERN.test(u),
+      // Doğrulama küçük harfe çevrildikten sonra yapılır: "AYSE" ile "ayse" hesabına girilir.
+      validationOrder: { username: "post-normalization" },
     }),
     nextCookies(),
   ],

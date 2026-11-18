@@ -1,0 +1,11 @@
+# DOMAIN ortam değişkeni: alan adı (otomatik HTTPS) ya da lokal deneme için "localhost".
+{$DOMAIN} {
+	encode zstd gzip
+
+	reverse_proxy app:3000 {
+		# İstemciden gelen sahte X-Forwarded-For'a güvenme; gerçek bağlantı IP'sini yaz.
+		header_up X-Forwarded-For {remote_host}
+		# SSE / akış için tamponlama yok.
+		flush_interval -1
+	}
+}

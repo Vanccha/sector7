@@ -1,5 +1,5 @@
 /** Üyelik başvurusu → onay akışı. Next.js'e bağımlı değildir. */
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
 import type { DB } from "@/db";
 import { applications, areas } from "@/db/schema";
 import { audit } from "@/lib/audit";
@@ -157,6 +157,13 @@ export async function rejectApplication(
       data: input.note ? { note: input.note } : {},
     });
   });
+}
+
+/** Bekleyen başvuru sayısı (kişisel veri çekmez, denetim kaydı yazmaz). Yalnız ana yönetici. */
+export async function countPendingApplications(db: DB, actor: Actor | null): Promise<number> {
+  requireMainAdmin(actor);
+  const [r] = await db.select({ n: count() }).from(applications).where(eq(applications.status, "pending"));
+  return r?.n ?? 0;
 }
 
 /** Onay formunda seçilebilecek aktif alanlar. */
