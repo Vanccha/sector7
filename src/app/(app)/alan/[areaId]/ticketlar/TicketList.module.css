@@ -1,0 +1,117 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.sectionHead h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px 14px 16px;
+  min-width: 0;
+  cursor: default;
+}
+.cancelled {
+  opacity: 0.55;
+}
+.cardTop {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.cardTop label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -10px -8px -10px -10px;
+}
+.cardTop input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--ac);
+}
+.title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.desc {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--tx2);
+  font-size: 14px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--ac-tx);
+  color: var(--ac-tx);
+}
+.badgeOk {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.waits {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--mut);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.actions button {
+  min-height: 44px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stepRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+.empty {
+  padding: 16px 20px;
+  color: var(--mut);
+}

@@ -316,6 +316,29 @@ textarea {
   margin: 0;
 }
 
+/* Durum rozeti (kesik köşeli küçük etiket) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-stretch: 112%;
+  color: var(--ac-tx);
+  border: 1px solid var(--btn-line);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  white-space: nowrap;
+}
+.badge--ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+.badge--hot {
+  color: var(--hot-tx);
+  border-color: var(--hot-tx);
+}
+
 /* Bilgi kutusu */
 .notice {
   border-left: 3px solid var(--ac-tx);

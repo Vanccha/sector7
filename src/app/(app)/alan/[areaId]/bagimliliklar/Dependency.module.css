@@ -1,0 +1,191 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.help {
+  margin: 0;
+  color: var(--mut);
+  font-size: 14px;
+}
+.flowWrap {
+  position: relative;
+  height: 70vh;
+  min-height: 480px;
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  --xy-background-color: var(--bg);
+  --xy-edge-stroke: var(--ac-tx);
+  --xy-edge-stroke-selected: var(--hot-tx);
+  --xy-edge-stroke-width: 2;
+  --xy-handle-background-color: var(--ac-tx);
+  --xy-handle-border-color: var(--bg);
+  --xy-controls-button-background-color: var(--panel2);
+  --xy-controls-button-background-color-hover: var(--sel);
+  --xy-controls-button-color: var(--tx);
+  --xy-controls-button-border-color: var(--line2);
+  --xy-minimap-background-color: var(--panel);
+  --xy-minimap-mask-background-color: rgba(0, 0, 0, 0.35);
+  --xy-minimap-node-background-color: var(--ac);
+  --xy-attribution-background-color: transparent;
+}
+.flowWrap :global(.react-flow__handle) {
+  width: 14px;
+  height: 14px;
+}
+.flowWrap :global(.react-flow__attribution) {
+  color: var(--mut);
+}
+.node {
+  position: relative;
+  width: 220px;
+  filter: drop-shadow(0 0 0 transparent);
+}
+.nodeBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--panel);
+  color: var(--tx);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  border-left: 3px solid var(--ac-tx);
+}
+.nodeBody[data-takeable="true"] {
+  border-left-color: var(--ok);
+}
+.nodeBody[data-blocked="true"] {
+  border-left-color: var(--hot-tx);
+}
+.nodeBody[data-external="true"] {
+  background: var(--panel2);
+  border-left-style: dashed;
+  opacity: 0.9;
+}
+.nodeArea {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ac-tx);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.nodeTitle {
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.nodeMeta {
+  font-size: 12px;
+  color: var(--mut);
+}
+.edgeBar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel2);
+  border: 1px solid var(--line2);
+}
+.edgeBar button {
+  min-height: 44px;
+}
+.error {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 5;
+  margin: 0;
+}
+.skeleton {
+  padding: 24px 20px;
+  color: var(--mut);
+}
+.list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  min-width: 0;
+}
+.cardTitle {
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.prChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 4px 0 10px;
+  background: var(--panel2);
+  border: 1px solid var(--line2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.prChip button {
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: 0;
+  color: var(--hot-tx);
+  font-size: 18px;
+  cursor: pointer;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+.row .field {
+  flex: 1 1 200px;
+}
+.row button {
+  min-height: 44px;
+}
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.results button {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  padding: 6px 12px;
+  background: var(--panel2);
+  border: 1px solid var(--line2);
+  color: var(--tx);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+}
+.results button:hover {
+  background: var(--sel);
+}
