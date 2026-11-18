@@ -147,3 +147,17 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - `notify()` satırı yazar ve olay yayınlar. Tercih: uygulama içi ve push kapalıysa satır yok; yalnız push açıksa satır okunmuş doğar; push kapalıysa `pushedAt` dolu doğar.
 - Push kuyruğu `notifications.pushedAt`: uygulama sürecindeki dağıtıcı (`src/server/push.ts`) bildirim olayında ve zamanlayıcı her dakika `FOR UPDATE SKIP LOCKED` ile sahiplenip `web-push` (VAPID) ile gönderir; ağ çağrıları transaction dışında; 1 saatten eski kuyruk gönderilmez; 404/410 dönen abonelik silinir. VAPID anahtarları yoksa push sessizce kapalı (uygulama içi çalışır). Anahtar üretimi: `npm run push:keys`.
 - Service worker yalnız push için (Aşama 6'da PWA kurulumuyla genişler).
+
+## Aşama 5 — Ana yönetici paneli (2026-11-18)
+
+### Geliştiricinin verdiği iş kuralı kararları
+- Üye yönetimi: şifre sıfırlama bağlantısı, ana yönetici ver/al, ana alan değiştir, **pasifleştir/etkinleştir**.
+- Pasif kişi giriş yapamaz, açık oturumları silinir. Elindeki ticket'lara **otomatik bir şey olmaz**: panelde "pasif kişide kalan" olarak öne çıkar; alan yöneticisi ya da ana yönetici ticket sayfasından havuza geri alır (`reclaimTicket`, yalnız pasif kişide kalan teklif/sürmekte olan ticket için).
+
+### Teknik kararlar
+- Panel (`/yonetim`) aktif sprint kapsamında alan × durum sayaçlarını tek gruplu sorguyla hesaplar; cevapsız talepler, süresi dolanlar, pasif kişide kalanlar, kapanan sprintlerin kararsız sayıları, son değerlendirmeler ve son işlemler öne çıkar.
+- Ayarlar tek formda kaydedilir; yalnız değişen anahtarlar yazılır ve denetim kaydına önceki/sonraki değerleriyle düşer. Değişiklik **sonraki işlemlere** uygulanır (ör. yeni teslim süresi yalnız bundan sonra alınan ticket'lara); red hakkı canlı sayıldığı için hemen geçerlidir.
+- Denetim kaydı: kişi (yapan ya da etkilenen), alan, ticket, eylem (tam ad ya da grup öneki) ve tarih aralığı (Europe/Istanbul günleri) ile süzülür; id ile sayfalanır; mesaj kayıtlarında mesaj metni gösterilir. CSV dışa aktarma (en fazla 10.000 satır, UTF-8 BOM, formül enjeksiyonuna karşı kaçış).
+- Giriş/çıkış artık denetim kaydına yazılır (Better Auth `session.create.after` / `session.delete.after`, yalnız kullanıcının kendi çıkışı). Kayıt yazılamazsa giriş bozulmaz.
+- Kişisel veri (e-posta, telefon) listelerde yoktur; tek tek "göster" ile açılır ve her açılış `personal_data.view` olarak kaydedilir.
+- Son aktif ana yönetici pasifleştirilemez; kimse kendini pasifleştiremez; pasif kişiye ana yönetici verilemez.

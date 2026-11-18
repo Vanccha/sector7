@@ -1,6 +1,6 @@
 # SECTOR7 — AllSpark çalışma sistemi
 
-AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA, Aşama 4 (İletişim)**.
+AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA, Aşama 5 (Ana yönetici paneli)**.
 
 - İş kuralları: [`PROMPT.md`](PROMPT.md)
 - Teknik kararlar: [`docs/KARARLAR.md`](docs/KARARLAR.md)
@@ -69,6 +69,13 @@ Zamanlanmış işler (süre uyarısı/dolumu, teklif dolumu, talep hatırlatmas�
 16. **Zil → Tercihler**: tür başına uygulama içi / push aç-kapa.
 
 **Web Push'u lokalde açmak:** `npm run push:keys` çıktısındaki üç satırı `.env`'e ekle, `npm run dev`'i yeniden başlat, **Bildirimler → Tercihler → Bu cihazda push bildirimlerini aç**. `localhost` tarayıcıda güvenli sayılır; Chrome/Edge'de çalışır. Üretimde aynı değişkenler sunucudaki `.env`'e yazılır.
+
+**Ana yönetici paneli (Aşama 5)** — ana yöneticiyle **Yönetim**:
+
+17. **Panel**: sprint ilerlemesi, alanların durumu ve "yapılacaklar" (cevapsız talepler, süresi dolan ticket'lar, pasif kişide kalanlar, kapanış kararları, başvurular, roadmap onayları). Sayfa canlı yenilenir.
+18. **Üyeler**: ara, iletişim bilgisini göster (denetim kaydına düşer), ana alanı değiştir, şifre sıfırlama bağlantısı üret, ana yönetici ver/al, pasifleştir. Pasif kişi giriş yapamaz; elindeki ticket ticket sayfasından **havuza geri al** ile döner.
+19. **Ayarlar**: sprint süresi, teslim süresi, uyarı, yönetici cevap süresi, red hakkı, dosya sınırı. Değişiklikler bundan sonraki işlemlere uygulanır.
+20. **Denetim kaydı**: kişi, alan, ticket, eylem ve tarihe göre süz; mesaj metinleri görünür; **CSV indir**.
 
 ### Faydalı komutlar
 

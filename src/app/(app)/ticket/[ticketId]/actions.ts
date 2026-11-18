@@ -6,6 +6,7 @@ import { getActor } from "@/lib/auth/session";
 import type { ActionResult } from "@/lib/contracts/errors";
 import { approveRequest, cancelRequest, createRequest, rejectRequest } from "@/server/ticket-requests";
 import { evaluateTicket, submitTicket } from "@/server/delivery";
+import { reclaimTicket } from "@/server/users";
 
 const refresh = () => revalidatePath("/", "layout");
 
@@ -69,6 +70,14 @@ export async function evaluateTicketAction(input: {
 }): Promise<ActionResult<undefined>> {
   return runAction(async () => {
     await evaluateTicket(db, await getActor(), input);
+    refresh();
+    return undefined;
+  });
+}
+
+export async function reclaimTicketAction(input: { ticketId: string }): Promise<ActionResult<undefined>> {
+  return runAction(async () => {
+    await reclaimTicket(db, await getActor(), input);
     refresh();
     return undefined;
   });

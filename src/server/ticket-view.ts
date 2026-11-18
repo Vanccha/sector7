@@ -52,7 +52,7 @@ import {
 } from "./ticket-common";
 import { z } from "zod";
 
-const unknownUser = (id: string): UserOption => ({ id, name: "Bilinmeyen kullanıcı", username: "" });
+export const unknownUser = (id: string): UserOption => ({ id, name: "Bilinmeyen kullanıcı", username: "" });
 
 function toRequestRow(r: RequestDbRow, users: Map<string, UserOption>): RequestRow {
   return {
@@ -84,7 +84,7 @@ function sortOpenRequests<T extends { overdueAt: string | null; respondBy: strin
 }
 
 /** Bekleyen talep satırlarını (ticket'larıyla) görünüm satırlarına çevirir. */
-async function toOpenRows(
+export async function toOpenRows(
   db: DbOrTx,
   rows: { request: RequestDbRow; ticket: TicketRow }[],
 ): Promise<OpenRequestRow[]> {

@@ -1,0 +1,30 @@
+.page { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.filters { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.filterGrid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 700px) { .filterGrid { grid-template-columns: repeat(3, 1fr); } }
+.filterActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.filterActions > * { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+
+.tableWrap { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.thead { display: none; }
+.row { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.row > th, .row > td { display: block; padding: 0; text-align: left; font-weight: normal; overflow-wrap: anywhere; }
+.row > [data-label]::before { content: attr(data-label) ": "; color: var(--mut); font-size: 12px; }
+.cellTime { font-weight: 600; }
+.raw { font-size: 11px; color: var(--mut); }
+.quote { margin: 4px 0; padding: 6px 10px; border-left: 3px solid var(--ac-tx); background: var(--bg); white-space: pre-wrap; overflow-wrap: anywhere; font-style: italic; }
+.linkBtn { background: none; border: 0; padding: 0 4px; min-height: 44px; color: var(--ac-tx); font: inherit; cursor: pointer; text-decoration: underline; }
+.pre { margin: 0; padding: 10px; background: var(--bg); border: 1px solid var(--line); font-size: 12px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.extra::before { content: none !important; }
+
+@media (min-width: 900px) {
+  .table { display: table; }
+  .thead { display: table-header-group; }
+  .table tbody { display: table-row-group; }
+  .row { display: table-row; padding: 0; margin: 0; border: 0; background: none; }
+  .row > th, .row > td { display: table-cell; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .row > [data-label]::before { content: none; }
+  .thead th { text-align: left; padding: 8px; color: var(--mut); font-size: 12px; border-bottom: 1px solid var(--line2); }
+  .row > .extra { display: table-cell; }
+}

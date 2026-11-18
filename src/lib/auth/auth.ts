@@ -6,6 +6,7 @@
  * - Giriş denemelerine IP başına hız sınırı (veritabanında tutulur).
  */
 import { betterAuth } from "better-auth";
+import { audit } from "@/lib/audit";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
@@ -89,6 +90,28 @@ export const auth = betterAuth({
           });
           if (!u?.active) return false;
           return { data: s };
+        },
+        // Denetim kaydı: giriş. Kayıt yazılamazsa giriş bozulmaz (yalnız günlüğe yazılır).
+        after: async (s) => {
+          await audit(db, {
+            actorId: s.userId,
+            action: "auth.sign_in",
+            entityType: "session",
+            subjectUserId: s.userId,
+            data: { ip: s.ipAddress ?? null, userAgent: s.userAgent ?? null },
+          }).catch((e) => console.error("[denetim] giriş kaydı yazılamadı:", e));
+        },
+      },
+      delete: {
+        // Yalnız kullanıcının kendi çıkışı (şifre sıfırlama / pasifleştirmede oturumlar doğrudan silinir).
+        after: async (s, ctx) => {
+          if (!ctx?.path?.includes("sign-out")) return;
+          await audit(db, {
+            actorId: s.userId,
+            action: "auth.sign_out",
+            entityType: "session",
+            subjectUserId: s.userId,
+          }).catch((e) => console.error("[denetim] çıkış kaydı yazılamadı:", e));
         },
       },
     },

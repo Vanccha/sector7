@@ -6,6 +6,7 @@ import { AppError } from "@/lib/contracts/errors";
 import { TICKET_STATUS_LABELS } from "@/lib/contracts/plan";
 import {
   REQUEST_KIND_LABELS,
+  isInProgress,
   REQUEST_STATUS_LABELS,
   type OfferView,
   type TicketDetail,
@@ -16,7 +17,10 @@ import { StatusBadge, VerdictBadge, fmtDateTime } from "@/components/tickets/sha
 import { ChannelThread } from "@/components/messaging/ChannelThread";
 import { getChannelView, getTicketChannelId } from "@/server/messaging";
 import { getTicketDetail } from "@/server/ticket-view";
+import { eq } from "drizzle-orm";
+import { user } from "@/db/schema";
 import { EvaluateForm } from "./EvaluateForm";
+import { ReclaimButton } from "./ReclaimButton";
 import { RequestCreate } from "./RequestCreate";
 import { RequestPanel } from "./RequestPanel";
 import { SubmitForm } from "./SubmitForm";
@@ -44,6 +48,11 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
       ? { ticket: t, offeredAt: t.offeredAt, expiresAt: t.offerExpiresAt }
       : null;
   const showCountdown = !!t.countdown.dueAt && t.status !== "submitted" && t.status !== "evaluated";
+  let holderInactive = false;
+  if (perms.canManage && t.assignee && (t.status === "offered" || isInProgress(t.status))) {
+    const [h] = await db.select({ active: user.active }).from(user).where(eq(user.id, t.assignee.id)).limit(1);
+    holderInactive = !!h && !h.active;
+  }
   const canRequest = perms.canRequestExtension || perms.canRequestWithdrawal;
 
   return (
@@ -63,6 +72,18 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           </div>
         ) : null}
       </header>
+
+      {holderInactive && t.assignee ? (
+        <section className={`cut-panel ${styles.section}`} aria-labelledby="reclaim-h">
+          <h2 className="panel-h" id="reclaim-h">
+            Kişi pasif
+          </h2>
+          <p className={styles.desc}>
+            {t.assignee.name} pasif olduğu için bu ticket üzerinde çalışamıyor. Ticket havuza geri alınabilir; havuzda diğer kişiler isteyebilir.
+          </p>
+          <ReclaimButton ticketId={t.id} />
+        </section>
+      ) : null}
 
       {offer && d.rejections ? <OfferCard offer={offer} rejections={d.rejections} stayOnAccept heading={false} /> : null}
 
