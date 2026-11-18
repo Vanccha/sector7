@@ -196,3 +196,126 @@
   outline: 2px solid var(--ac-tx);
   outline-offset: 6px;
 }
+
+/* Alan altıgeni içeriği */
+.areaName {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 700;
+  font-stretch: 125%;
+  letter-spacing: 0.02em;
+  color: var(--ac-tx);
+  overflow-wrap: anywhere;
+}
+.areaMgr {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--mut);
+}
+.areaBadge {
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 8px;
+  border: 1px solid var(--line2);
+  color: var(--mut);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.areaBadgeOn {
+  border-color: var(--ac2);
+  color: var(--tx);
+}
+.cardMgr {
+  display: block;
+  font-size: 13px;
+  color: var(--mut);
+}
+
+/* Yeni bağlantı şimşeği (yalnız transform/opacity/stroke-dashoffset; azaltılmış harekette yok) */
+.fxLayer {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
+.boltLine,
+.boltGlow {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+}
+.boltLine {
+  stroke: rgb(var(--fx-bolt));
+  stroke-width: 3;
+}
+.boltGlow {
+  stroke: rgba(var(--fx-glow), 0.4);
+  stroke-width: 9;
+}
+.flash {
+  fill: none;
+  stroke: rgb(var(--fx-ring));
+  stroke-width: 3;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .boltOn .boltLine,
+  .boltOn .boltGlow {
+    animation: zap 0.6s ease-out forwards;
+  }
+  .boltOn .flash {
+    animation: hexFlash 0.5s 0.35s ease-out forwards;
+  }
+}
+@keyframes zap {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes hexFlash {
+  0% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+}
+
+.overLayer {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
+.over {
+  stroke: var(--ac-tx);
+  stroke-width: 1;
+  stroke-opacity: 0.4;
+  transition: opacity 0.25s;
+}

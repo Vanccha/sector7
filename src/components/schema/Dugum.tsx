@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { DEFAULT_NODE_SHAPE, type NodeShape } from "@/lib/contracts/live-map";
 import styles from "./Dugum.module.css";
 
@@ -18,7 +18,7 @@ export const SHAPES: Record<NodeShape, { polygon: string; labelY: "mid" | "low" 
 
 /** Gövde ölçüleri (px) — yerleşim bunları kullanır. */
 export const NODE_SIZES = {
-  area: { w: 108, h: 94 },
+  area: { w: 160, h: 140 },
   person: { w: 60, h: 52 },
 } as const;
 
@@ -37,9 +37,11 @@ type Props = {
   title?: string;
   /** Altta rol / sayı. */
   sub?: string;
+  /** İçerik yuvası: verilirse baş harflerin yerine şeklin içine yazılır (alan: ad, yönetici, rozet). */
+  children?: ReactNode;
 };
 
-export function Dugum({ shape = DEFAULT_NODE_SHAPE, size, label, active, selected, dim, title, sub }: Props) {
+export function Dugum({ shape = DEFAULT_NODE_SHAPE, size, label, active, selected, dim, title, sub, children }: Props) {
   const s = SHAPES[shape];
   const { w, h } = NODE_SIZES[size];
   const style = { "--poly": s.polygon, width: w, height: h } as CSSProperties;
@@ -49,7 +51,11 @@ export function Dugum({ shape = DEFAULT_NODE_SHAPE, size, label, active, selecte
       <span className={styles.wrap} style={style}>
         <span className={styles.edge} />
         <span className={styles.body}>
-          <span className={`${styles.initials} ${s.labelY === "low" ? styles.low : ""}`}>{label}</span>
+          {children ? (
+            <span className={`${styles.content} ${s.labelY === "low" ? styles.contentLow : ""}`}>{children}</span>
+          ) : (
+            <span className={`${styles.initials} ${s.labelY === "low" ? styles.low : ""}`}>{label}</span>
+          )}
         </span>
       </span>
       {(title || sub) && (

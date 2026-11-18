@@ -12,6 +12,8 @@ export type LiveMapArea = {
   archived: boolean;
   /** Bu alandaki sürmekte olan ticket sayısı. */
   activeCount: number;
+  /** Alan yöneticisinin adı (yalnız ad; yönetici yoksa ya da pasifse null). Altıgenin içinde gösterilir. */
+  managerName: string | null;
 };
 
 export type LiveMapPerson = {

@@ -5,23 +5,8 @@ import { useRouter } from "next/navigation";
 import { requestTicketAction } from "@/app/(app)/actions";
 import type { DrawResult, MyTicketsView, OfferView, RejectionQuota } from "@/lib/contracts/tickets";
 import { OfferCard, QuotaText } from "./OfferCard";
+import { ACCEPT_FX_MS, playAcceptFx, prefersReducedMotion, SparkFx } from "./SparkFx";
 import styles from "./tickets.module.css";
-
-function SparkFx({ on }: { on: boolean }) {
-  return (
-    <svg className={`${styles.fx} ${on ? styles.fxOn : ""}`} viewBox="0 0 200 80" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-      <circle className={styles.ring} cx="100" cy="40" r="26" />
-      <polyline className={styles.glow} points="10,40 60,18 80,44 120,12 150,46 190,30" />
-      <polyline className={styles.bolt} points="10,40 60,18 80,44 120,12 150,46 190,30" />
-      <polyline className={styles.branch} points="80,44 96,66 118,58" />
-      <polyline className={styles.branch} points="120,12 138,4 156,10" />
-      <polyline className={styles.branch} points="60,18 46,6 30,8" />
-      <circle className={`${styles.dot} ${styles.dot1}`} cx="60" cy="18" r="4" />
-      <circle className={`${styles.dot} ${styles.dot2}`} cx="120" cy="12" r="3" />
-      <circle className={`${styles.dot} ${styles.dot3}`} cx="150" cy="46" r="4" />
-    </svg>
-  );
-}
 
 /** Ana sayfadaki "Kıvılcım çak" akışı: teklif kartı, red hakkı uyarıları, sonuç mesajları. */
 export function SparkRequest({ initial }: { initial: MyTicketsView }) {
@@ -55,7 +40,13 @@ export function SparkRequest({ initial }: { initial: MyTicketsView }) {
       const r: DrawResult = res.data;
       setQuota(r.rejections);
       if (r.kind === "offered") setOffer(r.offer);
-      else if (r.kind === "taken") router.push(`/ticket/${r.ticket.id}`);
+      else if (r.kind === "taken") {
+        // Red hakkı bittiği için doğrudan atandı: kabul efekti, sonra ticket sayfası.
+        const href = `/ticket/${r.ticket.id}`;
+        playAcceptFx("Ticket alındı, geri sayım başladı.");
+        if (prefersReducedMotion()) router.push(href);
+        else setTimeout(() => router.push(href), ACCEPT_FX_MS);
+      }
       else setMessage("Şu an alınabilir ticket yok. Biraz sonra tekrar deneyebilirsin.");
     });
   }

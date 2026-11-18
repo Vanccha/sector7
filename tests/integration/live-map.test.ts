@@ -127,6 +127,39 @@ describe("getLiveMap kişiler", () => {
   });
 });
 
+describe("getLiveMap alan yöneticisi adı", () => {
+  it("managerName yöneticinin adı; yöneticisiz alanda null; pasif yöneticide null", async () => {
+    const c = await setupCycle();
+    const mgrUser = await db.select().from(user).where(eq(user.id, c.mgrA.id));
+    const noMgr = await makeArea({ name: "Yöneticisiz" });
+    const m = await makeMember(c.home.id, "K1");
+    await takenTicket(c, c.areaA.id, m);
+    let map = await getLiveMap(db, c.member);
+    const by = () => Object.fromEntries(map.areas.map((a) => [a.id, a]));
+    expect(by()[c.areaA.id]!.managerName).toBe(mgrUser[0]!.name);
+    expect(by()[c.areaB.id]!.managerName).not.toBeNull();
+    expect(by()[noMgr.id]!.managerName).toBeNull();
+    expect(by()[c.home.id]!.managerName).toBeNull();
+    await db.update(user).set({ active: false }).where(eq(user.id, c.mgrA.id));
+    map = await getLiveMap(db, c.member);
+    expect(by()[c.areaA.id]!.managerName).toBeNull();
+    expect(by()[c.areaB.id]!.managerName).not.toBeNull();
+  });
+
+  it("alan anahtarları sabit; kişisel veri (e-posta, telefon, kullanıcı adı) sızmaz", async () => {
+    const c = await setupCycle();
+    const mgr = (await db.select().from(user).where(eq(user.id, c.mgrA.id)))[0]!;
+    await takenTicket(c, c.areaA.id, await makeMember(c.home.id));
+    const map = await getLiveMap(db, c.admin);
+    for (const a of map.areas)
+      expect(Object.keys(a).sort()).toEqual(["activeCount", "archived", "id", "managerName", "name"]);
+    const json = JSON.stringify(map);
+    expect(json).not.toContain(mgr.email);
+    expect(json).not.toContain(mgr.username as string);
+    expect(json).not.toContain("managerId");
+  });
+});
+
 describe("getLiveMap alanlar", () => {
   it("arşivsiz tüm alanlar; arşivli yalnız bağlantısı varsa; activeCount; ad sırası", async () => {
     const sc = await setupCycle();

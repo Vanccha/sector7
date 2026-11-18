@@ -6,6 +6,7 @@ import { acceptOfferAction, rejectOfferAction } from "@/app/(app)/actions";
 import { GITHUB_REQUIRED_MESSAGE } from "@/lib/contracts/github";
 import type { OfferView, RejectionQuota } from "@/lib/contracts/tickets";
 import { Countdown } from "./Countdown";
+import { ACCEPT_FX_MS, playAcceptFx, prefersReducedMotion } from "./SparkFx";
 import styles from "./tickets.module.css";
 
 export function QuotaText({ q }: { q: RejectionQuota }) {
@@ -38,6 +39,7 @@ export function OfferCard({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [taken, setTaken] = useState(false);
   const t = offer.ticket;
   const canReject = rejections.remaining > 0;
   const last = rejections.remaining === 1;
@@ -46,10 +48,16 @@ export function OfferCard({
     setError(null);
     start(async () => {
       const res = await acceptOfferAction({ ticketId: t.id });
-      if (res.ok) {
-        if (stayOnAccept) router.refresh();
-        else router.push(`/ticket/${t.id}`);
-      } else setError(res.error);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const go = () => (stayOnAccept ? router.refresh() : router.push(`/ticket/${t.id}`));
+      setTaken(true);
+      playAcceptFx("Ticket alındı, geri sayım başladı.");
+      // Kıvılcım efekti ~800ms, sonra yönlendirme (azaltılmış harekette anında).
+      if (prefersReducedMotion()) go();
+      else setTimeout(go, ACCEPT_FX_MS);
     });
   }
   function reject() {
@@ -76,7 +84,9 @@ export function OfferCard({
       </div>
       {t.description ? <p className={styles.desc}>{t.description}</p> : null}
       <QuotaText q={rejections} />
-      {confirming ? (
+      {taken ? (
+        <p className={styles.taken}>Ticket alındı. Geri sayım başladı.</p>
+      ) : confirming ? (
         <div className="notice" role="alert">
           Bu son red hakkın; bundan sonra gelen ticket doğrudan sende olacak.
           <div className={styles.actions} style={{ marginTop: 10 }}>
@@ -100,7 +110,7 @@ export function OfferCard({
           ) : null}
         </div>
       )}
-      {!canReject ? <p className="hint">Bu sprintte red hakkın kalmadı.</p> : null}
+      {!canReject && !taken ? <p className="hint">Bu sprintte red hakkın kalmadı.</p> : null}
       <p role="alert" className="field-error" hidden={!error}>
         {error}
         {error === GITHUB_REQUIRED_MESSAGE && (

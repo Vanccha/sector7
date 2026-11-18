@@ -410,12 +410,11 @@ textarea {
 .lamp.is-y {
   background: var(--lamp-y);
   box-shadow: 0 0 10px var(--lamp-y);
-  animation: blinkL 1.4s steps(2) infinite;
+  /* Geliştirici isteği (Aşama 7): lamba sabit yanar, yanıp sönmez. */
 }
 .lamp.is-r {
   background: var(--lamp-r);
   box-shadow: 0 0 12px var(--lamp-r);
-  animation: blinkL 0.7s steps(2) infinite;
 }
 
 .days {

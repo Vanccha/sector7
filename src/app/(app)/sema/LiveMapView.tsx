@@ -19,6 +19,35 @@ function initialsOf(name: string, max = 2): string {
   return chars.join("").toLocaleUpperCase("tr");
 }
 
+/** Noktanın (px,py) doğru parçasına (x0,y0)-(x1,y1) uzaklığı. */
+function segDist(px: number, py: number, x0: number, y0: number, x1: number, y1: number): number {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const t = clamp(((px - x0) * dx + (py - y0) * dy) / (dx * dx + dy * dy || 1), 0, 1);
+  return Math.hypot(px - (x0 + t * dx), py - (y0 + t * dy));
+}
+
+/** Kişi → alan şimşeği: iki uç arasında deterministik zikzak yol. */
+function zigzag(x0: number, y0: number, x1: number, y1: number): string {
+  const N = 9;
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  let d = `M${x0.toFixed(1)} ${y0.toFixed(1)}`;
+  for (let i = 1; i < N; i++) {
+    const t = i / N;
+    const off = (i % 2 ? 1 : -1) * 11;
+    d += ` L${(x0 + dx * t + nx * off).toFixed(1)} ${(y0 + dy * t + ny * off).toFixed(1)}`;
+  }
+  return `${d} L${x1.toFixed(1)} ${y1.toFixed(1)}`;
+}
+/** Hedef altıgen flaşı için çokgen (Dugum `hex` şekliyle aynı oranlar), merkeze göre. */
+const HEX_FLASH = [[-40, -70], [40, -70], [78.4, -14], [78.4, 14], [40, 70], [-40, 70], [-78.4, 14], [-78.4, -14]]
+  .map(([x, y]) => `${x},${y}`)
+  .join(" ");
+
 function TicketList({ links }: { links: LiveMapLink[] }) {
   return (
     <ul className={styles.tickets}>
@@ -63,6 +92,11 @@ export function LiveMapView({ map }: { map: LiveMap }) {
     return () => ro.disconnect();
   }, []);
 
+  // Yeni bağlantı şimşeği: yalnız canlı güncellemede (ilk yüklemede değil); azaltılmış harekette CSS göstermez.
+  const [bolts, setBolts] = useState<string[]>([]);
+  const prevKeys = useRef<Set<string> | null>(null);
+  const boltTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [hover, setHover] = useState<Focus>(null);
   const [sel, setSel] = useState<Focus>(null);
 
@@ -82,10 +116,26 @@ export function LiveMapView({ map }: { map: LiveMap }) {
     return [...byKey.values()];
   }, [map.links, areaById, personById]);
 
-  const layout = useMemo(
-    () => layoutLiveMap(map, { width, height: Math.round(Math.min(Math.max(width * 0.62, 480), 720)) }),
-    [map, width],
+  useEffect(() => {
+    const cur = new Set(pairs.map((p) => p.key));
+    const prev = prevKeys.current;
+    prevKeys.current = cur;
+    if (!prev) return;
+    const fresh = [...cur].filter((k) => !prev.has(k));
+    if (fresh.length === 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setBolts(fresh);
+    if (boltTimer.current) clearTimeout(boltTimer.current);
+    boltTimer.current = setTimeout(() => setBolts([]), 900);
+  }, [pairs]);
+  useEffect(
+    () => () => {
+      if (boltTimer.current) clearTimeout(boltTimer.current);
+    },
+    [],
   );
+
+  const layout = useMemo(() => layoutLiveMap(map), [map]);
   // Kap genişliğine sığdır (büyütme yok, alt sınır 0.5; altında kaydırma).
   const scale = clamp(width / layout.width, 0.5, 1);
   const pos = useMemo(() => {
@@ -205,7 +255,7 @@ export function LiveMapView({ map }: { map: LiveMap }) {
                     key={key}
                     type="button"
                     className={styles.node}
-                    style={{ left: pt.x, top: pt.y, width: 150, marginTop: -NODE_SIZES.area.h / 2 }}
+                    style={{ left: pt.x, top: pt.y, width: NODE_SIZES.area.w, marginTop: -NODE_SIZES.area.h / 2 }}
                     aria-pressed={sel?.kind === "area" && sel.id === a.id}
                     aria-label={`${a.name} alanı, ${count} ticket sürüyor`}
                     {...nodeProps("area", a.id)}
@@ -216,9 +266,15 @@ export function LiveMapView({ map }: { map: LiveMap }) {
                       active={activeAreas.has(a.id)}
                       selected={focus?.kind === "area" && focus.id === a.id}
                       dim={!!related && !related.nodes.has(key)}
-                      title={a.name}
-                      sub={count > 0 ? `${count} ticket` : "boş"}
-                    />
+                    >
+                      <span className={styles.areaName} title={a.name}>
+                        {a.name}
+                      </span>
+                      <span className={styles.areaMgr}>{a.managerName ?? "yönetici yok"}</span>
+                      <span className={`${styles.areaBadge} ${count > 0 ? styles.areaBadgeOn : ""}`}>
+                        {count > 0 ? `${count} ticket` : "boş"}
+                      </span>
+                    </Dugum>
                   </button>
                 );
               })}
@@ -248,6 +304,37 @@ export function LiveMapView({ map }: { map: LiveMap }) {
                   </button>
                 );
               })}
+              {/* Başka bir alanın altıgeninin altından geçen bağlantılar: düğümlerin üstünde ince, yarı saydam */}
+              <svg className={styles.overLayer} width={layout.width} height={layout.height} aria-hidden="true">
+                {pairs.map((p) => {
+                  const a = pos.get(`area:${p.areaId}`);
+                  const q = pos.get(`person:${p.userId}`);
+                  if (!a || !q) return null;
+                  const crosses = layout.areas.some((o) => o.id !== p.areaId && segDist(o.x, o.y, q.x, q.y, a.x, a.y) < 66);
+                  if (!crosses) return null;
+                  const on = !related || related.edges.has(p.key);
+                  return <line key={p.key} className={`${styles.over} ${on ? "" : styles.faded}`} x1={q.x} y1={q.y} x2={a.x} y2={a.y} />;
+                })}
+              </svg>
+              <svg className={styles.fxLayer} width={layout.width} height={layout.height} aria-hidden="true" focusable="false">
+                {pairs
+                  .filter((p) => bolts.includes(p.key))
+                  .map((p) => {
+                    const a = pos.get(`area:${p.areaId}`);
+                    const q = pos.get(`person:${p.userId}`);
+                    if (!a || !q) return null;
+                    const d = zigzag(q.x, q.y, a.x, a.y);
+                    return (
+                      <g key={p.key} className={styles.boltOn}>
+                        <path d={d} pathLength={1} className={styles.boltGlow} />
+                        <path d={d} pathLength={1} className={styles.boltLine} />
+                        <g transform={`translate(${a.x} ${a.y})`}>
+                          <polygon points={HEX_FLASH} className={styles.flash} />
+                        </g>
+                      </g>
+                    );
+                  })}
+              </svg>
             </div>
             </div>
           </div>
@@ -296,6 +383,7 @@ export function LiveMapView({ map }: { map: LiveMap }) {
                   </span>
                   <div>
                     <h3 className={styles.cardTitle}>{a.name}</h3>
+                    <span className={styles.cardMgr}>{a.managerName ? `Yönetici: ${a.managerName}` : "Yönetici yok"}</span>
                     <span className="muted" style={{ fontSize: 13 }}>
                       {count > 0 ? `${count} ticket sürüyor` : "Şu an kimse yok"}
                     </span>

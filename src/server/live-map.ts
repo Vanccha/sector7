@@ -51,14 +51,22 @@ export async function getLiveMap(db: DbOrTx, actor: Actor): Promise<LiveMap> {
 
   const linked = [...counts.keys()];
   const areaRows = await db
-    .select({ id: areas.id, name: areas.name, archivedAt: areas.archivedAt })
+    .select({ id: areas.id, name: areas.name, archivedAt: areas.archivedAt, managerName: user.name, managerActive: user.active })
     .from(areas)
+    .leftJoin(user, eq(user.id, areas.managerId))
     .where(linked.length > 0 ? or(isNull(areas.archivedAt), inArray(areas.id, linked)) : isNull(areas.archivedAt))
     .orderBy(asc(areas.name));
 
   return {
     areas: areaRows
-      .map((a) => ({ id: a.id, name: a.name, archived: a.archivedAt != null, activeCount: counts.get(a.id) ?? 0 }))
+      .map((a) => ({
+        id: a.id,
+        name: a.name,
+        archived: a.archivedAt != null,
+        activeCount: counts.get(a.id) ?? 0,
+        // Yalnız ad (kişisel veri değil); pasif yönetici gösterilmez.
+        managerName: a.managerName && a.managerActive ? a.managerName : null,
+      }))
       .sort(byName),
     people: [...people.values()].sort(byName),
     links,
