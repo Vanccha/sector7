@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Actor } from "@/lib/contracts/actor";
 import { rolesOf, ROLE_LABELS } from "@/lib/contracts/actor";
 import type { SprintView } from "@/lib/current-sprint";
@@ -8,7 +9,8 @@ import { SprintStatus } from "./SprintStatus";
 
 export function navFor(actor: Actor): NavItem[] {
   const items: NavItem[] = [{ href: "/", label: "Ana sayfa" }];
-  if (actor.isMainAdmin) items.push({ href: "/yonetim/basvurular", label: "Başvurular" });
+  if (actor.isMainAdmin || actor.managedAreaIds.length > 0) items.push({ href: "/alan", label: "Alanlarım" });
+  if (actor.isMainAdmin) items.push({ href: "/yonetim", label: "Yönetim" });
   return items;
 }
 
@@ -40,7 +42,9 @@ export function AppHeader({ actor, sprint }: { actor: Actor; sprint: SprintView 
         </div>
       </div>
       <SprintStatus sprint={sprint} />
-      <NavLinks items={navFor(actor)} />
+      <Suspense>
+        <NavLinks items={navFor(actor)} />
+      </Suspense>
     </header>
   );
 }

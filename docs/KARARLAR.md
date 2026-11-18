@@ -57,6 +57,25 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - `docker-compose.prod.yml`: `db` → `migrate` (göçleri uygulayıp çıkar) → `app` (standalone, `node` kullanıcısı) → `caddy` (otomatik HTTPS). Yalnız Caddy port açar; `X-Forwarded-For` Caddy tarafından gerçek IP ile yeniden yazılır (hız sınırı buna güvenir).
 - Debian slim taban imaj (argon2 yerel modülü glibc ister).
 
+## Aşama 2 — Plan (2026-11-18)
+
+### Geliştiricinin verdiği iş kuralı kararları
+- Ön koşul **teslim edilince** (`submitted`) bitmiş sayılır; değerlendirme beklenmez.
+- Onaylı roadmap'in basamakları değişirse (ekle/düzenle/sil/sırala) roadmap **yeniden onaya** düşer (`approved → submitted`). Mevcut ticket'lar etkilenmez. Hedeflerin düzenlenmesi roadmap durumunu değiştirmez.
+- Bağımlılık **alanlar arası** kurulabilir. Bağlantıyı, bekleyen (bağımlı) ticket'ın alanını yöneten kişi (ya da ana yönetici) kurar ve kaldırır; ön koşul herhangi bir alandan olabilir.
+- Sprintleri **ana yönetici elle** açar ve başlatır. Aynı anda tek aktif sprint; kapanış Aşama 3'te.
+
+### Teknik kararlar
+- İptal edilen ön koşul bağımlıyı engellemez (aksi halde zincir sonsuza dek kilitlenir). `PREREQ_DONE_STATUSES = submitted, evaluated, cancelled`.
+- "Alınabilir" ayrı bir durum değil, hesaplanır: havuzda (`available` / `returned_to_pool`) ve tüm ön koşulları bitmiş.
+- Ticket'lar silinmez, **iptal edilir** (denetim kaydı ticket'a bağlı; geçmiş korunur). İptal yalnız kimse almamışken (`draft`, `available`, `returned_to_pool`).
+- Ticket yalnız **onaylı** roadmap'in bir basamağından oluşturulur; alanı ve sprinti roadmap'ten gelir. Taslak olarak doğar, alan yöneticisi yayınlayınca havuza girer.
+- Ön koşullar yalnız ticket kimse almamışken düzenlenebilir.
+- Döngü kontrolü: bağlantı eklenirken `dependsOn`'dan geriye doğru özyinelemeli CTE ile `ticketId`'ye ulaşılıyor mu bakılır; grafik yazımları `pg_advisory_xact_lock` ile sıraya sokulur (eşzamanlı iki ters bağlantı döngü oluşturamaz).
+- Düzenleyicideki düğüm konumu (`posX/posY`) yalnız görünümdür, denetim kaydına yazılmaz.
+- Bağımlılık düzenleyicisi: masaüstünde React Flow 12 (`@xyflow/react`), mobilde liste + "şundan sonra" seçimi; ikisi aynı action'ları kullanır.
+- Alan arşivlemede aktif ticket varsa sunucu önce uyarı döndürür (`archived: false, activeTicketCount`); yönetici onaylarsa ikinci çağrı `confirm: true` ile arşivler. Arşivli alanın yöneticiliği rol vermez ve planı düzenlenemez.
+
 ### Ertelenen
 - Gerçek zamanlı iletişim (Aşama 4): PostgreSQL LISTEN/NOTIFY + Server-Sent Events planlanıyor (tek sunucu, ek servis yok).
 - Zamanlayıcı (Aşama 3): pg-boss (PostgreSQL üzerinde, ek altyapı gerektirmez) planlanıyor.
