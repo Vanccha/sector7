@@ -19,7 +19,6 @@ import {
 } from "@/lib/contracts/plan";
 import { getAreaOrThrow, iso } from "./plan-common";
 
-
 async function countActiveTickets(db: DbOrTx, areaId: string): Promise<number> {
   const [r] = await db
     .select({ n: count() })
@@ -39,6 +38,7 @@ export async function listAreas(db: DbOrTx, actor: Actor | null): Promise<AreaRo
       managerId: areas.managerId,
       managerName: user.name,
       archivedAt: areas.archivedAt,
+      githubRepo: areas.githubRepo,
     })
     .from(areas)
     .leftJoin(user, eq(user.id, areas.managerId))
@@ -57,6 +57,7 @@ export async function listAreas(db: DbOrTx, actor: Actor | null): Promise<AreaRo
     managerName: r.managerName,
     archivedAt: iso(r.archivedAt),
     activeTicketCount: byArea.get(r.id) ?? 0,
+    githubRepo: r.githubRepo,
   }));
   return [...mapped.filter((a) => !a.archivedAt), ...mapped.filter((a) => a.archivedAt)];
 }

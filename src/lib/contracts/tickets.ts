@@ -111,6 +111,8 @@ export const submitTicketSchema = z.object({
   description: z.string().trim().min(5, "Ne yaptığını kısaca anlat (en az 5 karakter).").max(5000),
   links: z.array(httpUrl).max(MAX_SUBMISSION_LINKS, `En fazla ${MAX_SUBMISSION_LINKS} bağlantı.`).default([]),
   fileIds: z.array(id).max(MAX_SUBMISSION_FILES, `En fazla ${MAX_SUBMISSION_FILES} dosya.`).default([]),
+  /** Aşama 7.5: teslim edilen PR (ticket'a bağlı `ticket_pull_requests` satırı). Yükleme kapalıyken dosya yok. */
+  pullRequestId: id.nullable().default(null),
 });
 
 export const evaluateTicketSchema = z.object({
@@ -207,6 +209,8 @@ export type SubmissionRow = {
   links: string[];
   files: FileRef[];
   createdAt: string;
+  /** Aşama 7.5: teslim edilen PR. */
+  pullRequest?: { number: number; url: string; title: string; merged: boolean } | null;
 };
 
 export type EvaluationRow = {

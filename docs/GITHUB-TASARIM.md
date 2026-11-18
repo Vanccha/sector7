@@ -1,6 +1,6 @@
 # GitHub entegrasyonu — tasarım önerisi (Aşama 7.5, taslak)
 
-Durum: **kısmen onaylı** (kimlik, depo düzeni). Adım 1 (hesap bağlama) uygulandı. Teslim/senkron ve App türü cevap bekliyor. Adım 2+ için onaya kadar kod yazılmaz.
+Durum: **onaylı ve uygulandı** (2026-11-18): kimlik, depo düzeni, teslim/senkron (öneri kabul edildi), GitHub App. Ayrıntılı kararlar `docs/KARARLAR.md` → 7.5.
 
 ## Amaç
 
@@ -51,3 +51,11 @@ Durum: **kısmen onaylı** (kimlik, depo düzeni). Adım 1 (hesap bağlama) uygu
 
 ## Açık sorular
 Geliştiriciye soruldu; cevaplar `docs/KARARLAR.md`'ye yazılacak.
+
+## Kurulum (uygulandıktan sonra)
+1. GitHub'da AllSpark organizasyonu (yoksa açın). Her alan için org içinde bir depo açın (ör. `alan-tasarim`), varsayılan dalı olsun.
+2. Org ayarlarında **GitHub App** oluşturun: izinler Issues R/W, Pull requests R, Contents R/W, Metadata R; webhook URL `<APP_URL>/api/github/webhook`, gizli anahtar belirleyin; olaylar *Pull request*, *Issues*. App'i org'a (alan depolarına) kurun.
+3. `.env`: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH` (indirilen .pem), `GITHUB_APP_INSTALLATION_ID`, `GITHUB_ORG`, `GITHUB_WEBHOOK_SECRET`. Hesap bağlama için `GITHUB_CLIENT_ID/SECRET` (App'in kendi OAuth bilgileri ya da ayrı OAuth App; callback `<APP_URL>/api/auth/callback/github`).
+4. Ana yönetici → Alanlar: her alana depo adını yazın. Mevcut yayınlanmış ticket'lar kuyruğa girer, issue'lar dakikalar içinde açılır.
+5. Lokal webhook denemesi: `gh webhook forward --org=<org> --events=pull_request,issues --url=http://localhost:3000/api/github/webhook --secret=<secret>`.
+6. Geçiş tamamlanınca Yönetim → Ayarlar → "Sunucuya dosya yükleme" kapatılır (eski dosyalar korunur).

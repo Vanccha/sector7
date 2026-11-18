@@ -1,5 +1,7 @@
 "use client";
 import { useId, useRef, useState, useTransition } from "react";
+import { PrState } from "@/components/github/PrState";
+import type { TicketGithubView } from "@/lib/contracts/github";
 import type { FileRef } from "@/lib/contracts/tickets";
 import { submitTicketAction } from "./actions";
 import styles from "./Ticket.module.css";
@@ -11,11 +13,17 @@ export function SubmitForm({
   ticketId,
   resubmit,
   limits,
+  uploadsEnabled = true,
+  pullRequests = [],
 }: {
   ticketId: string;
   resubmit: boolean;
   limits: { uploadMaxMb: number; maxLinks: number; maxFiles: number };
+  uploadsEnabled?: boolean;
+  pullRequests?: TicketGithubView["pullRequests"];
 }) {
+  const prs = [...pullRequests].sort((a, b) => Number(b.merged) - Number(a.merged));
+  const [prId, setPrId] = useState<string>(() => prs.find((p) => p.merged)?.id ?? "");
   const uid = useId();
   const [description, setDescription] = useState("");
   const [links, setLinks] = useState<string[]>([]);
@@ -73,7 +81,8 @@ export function SubmitForm({
         ticketId,
         description,
         links: links.map((l) => l.trim()).filter(Boolean),
-        fileIds,
+        fileIds: uploadsEnabled ? fileIds : [],
+        pullRequestId: prId || null,
       });
       if (res.ok) {
         setDone("Teslimin alındı. Teşekkürler!");
@@ -137,6 +146,33 @@ export function SubmitForm({
         </p>
       </fieldset>
 
+      {prs.length > 0 ? (
+        <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend className="label">Teslim edilen PR</legend>
+          <ul className={styles.plain}>
+            {prs.map((p) => (
+              <li key={p.id}>
+                <label className={styles.prOption}>
+                  <input type="radio" name={`${uid}-pr`} checked={prId === p.id} onChange={() => setPrId(p.id)} />
+                  <span>
+                    #{p.number} {p.title}
+                  </span>
+                  <PrState pr={p} />
+                  {p.merged ? <span className={styles.small}>Önerilen</span> : null}
+                </label>
+              </li>
+            ))}
+            <li>
+              <label className={styles.prOption}>
+                <input type="radio" name={`${uid}-pr`} checked={prId === ""} onChange={() => setPrId("")} />
+                <span>PR yok</span>
+              </label>
+            </li>
+          </ul>
+        </fieldset>
+      ) : null}
+
+      {uploadsEnabled ? (
       <div className="field">
         <span className="label" id={`${uid}-files`}>
           Dosyalar (en fazla {limits.maxFiles}, her biri {limits.uploadMaxMb} MB)
@@ -168,6 +204,9 @@ export function SubmitForm({
           {fileError}
         </p>
       </div>
+      ) : (
+        <p className={styles.small}>Dosya yükleme kapalı; PR ya da bağlantı ekle.</p>
+      )}
 
       <div className={styles.row}>
         <button type="submit" className="btn-solid" disabled={pending || uploading}>

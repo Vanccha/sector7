@@ -98,6 +98,11 @@ export const SETTING_META: Record<keyof Settings, { label: string; unit: string;
   managerResponseHours: { label: "Yönetici cevap süresi", unit: "saat", help: "Ek süre / geri çekme taleplerine cevap süresi. Yeni taleplere uygulanır." },
   rejectionsPerSprint: { label: "Red hakkı", unit: "sprint başına", help: "Kişinin bir sprintte reddedebileceği teklif sayısı. Hemen geçerli olur." },
   uploadMaxMb: { label: "Dosya boyutu sınırı", unit: "MB", help: "Teslimde tek dosya için üst sınır." },
+  uploadsEnabled: {
+    label: "Sunucuya dosya yükleme",
+    unit: "",
+    help: "Kapalıyken teslimde dosya yüklenmez; teslim PR ve bağlantılarla yapılır. Mevcut dosyalar korunur.",
+  },
 };
 
 export type SettingsView = {

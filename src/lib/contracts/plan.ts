@@ -187,6 +187,8 @@ export type AreaRow = {
   managerName: string | null;
   archivedAt: string | null; // ISO
   activeTicketCount: number;
+  /** Aşama 7.5: alanın GitHub deposu (yalnız ana yönetici listesinde dolu). */
+  githubRepo?: string | null;
 };
 
 /** archiveArea sonucu: aktif ticket varsa ve onay yoksa arşivlemez. */

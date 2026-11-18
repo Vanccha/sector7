@@ -6,6 +6,7 @@ import { getActor } from "@/lib/auth/session";
 import type { ActionResult } from "@/lib/contracts/errors";
 import { approveRequest, cancelRequest, createRequest, rejectRequest } from "@/server/ticket-requests";
 import { evaluateTicket, submitTicket } from "@/server/delivery";
+import { retryGithubSync } from "@/server/github/admin";
 import { reclaimTicket } from "@/server/users";
 
 const refresh = () => revalidatePath("/", "layout");
@@ -55,6 +56,7 @@ export async function submitTicketAction(input: {
   description: string;
   links: string[];
   fileIds: string[];
+  pullRequestId?: string | null;
 }): Promise<ActionResult<{ submissionId: string }>> {
   return runAction(async () => {
     const r = await submitTicket(db, await getActor(), input);
@@ -78,6 +80,14 @@ export async function evaluateTicketAction(input: {
 export async function reclaimTicketAction(input: { ticketId: string }): Promise<ActionResult<undefined>> {
   return runAction(async () => {
     await reclaimTicket(db, await getActor(), input);
+    refresh();
+    return undefined;
+  });
+}
+
+export async function retryGithubSyncAction(input: { ticketId: string }): Promise<ActionResult<undefined>> {
+  return runAction(async () => {
+    await retryGithubSync(db, await getActor(), input);
     refresh();
     return undefined;
   });

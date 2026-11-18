@@ -4,7 +4,7 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { DB } from "@/db";
-import { evaluations, files, submissions, tickets } from "@/db/schema";
+import { evaluations, files, submissions, ticketPullRequests, tickets } from "@/db/schema";
 import { audit } from "@/lib/audit";
 import { canManageArea, requireActor } from "@/lib/auth/guards";
 import type { Actor } from "@/lib/contracts/actor";
@@ -29,6 +29,33 @@ import {
   ticketLink,
 } from "./ticket-common";
 
+export const UPLOADS_CLOSED_MESSAGE = "Dosya yükleme kapalı; PR ya da bağlantı ekle";
+
+/** Teslim satırına bağlı PR bilgisi (ticket-view teslim listesini bununla genişletir). */
+export type SubmissionPullRequest = { number: number; url: string; title: string; merged: boolean };
+
+/** Teslim kimliği -> PR bilgisi (PR'sız teslimler haritada yoktur). */
+export async function loadSubmissionPullRequests(
+  db: Pick<DB, "select">,
+  submissionIds: string[],
+): Promise<Map<string, SubmissionPullRequest>> {
+  const out = new Map<string, SubmissionPullRequest>();
+  if (submissionIds.length === 0) return out;
+  const rows = await db
+    .select({
+      submissionId: submissions.id,
+      number: ticketPullRequests.number,
+      url: ticketPullRequests.url,
+      title: ticketPullRequests.title,
+      merged: ticketPullRequests.merged,
+    })
+    .from(submissions)
+    .innerJoin(ticketPullRequests, eq(ticketPullRequests.id, submissions.pullRequestId))
+    .where(inArray(submissions.id, submissionIds));
+  for (const r of rows) out.set(r.submissionId, { number: r.number, url: r.url, title: r.title, merged: r.merged });
+  return out;
+}
+
 export type UploadInput = { name: string; type: string; size: number; arrayBuffer(): Promise<ArrayBuffer> };
 
 function uploadRoot(): string {
@@ -49,7 +76,8 @@ function cleanFileName(name: string): string {
 
 export async function storeUpload(db: DB, actor: Actor | null, file: UploadInput, now: Date = new Date()): Promise<FileRef> {
   const a = requireActor(actor);
-  const { uploadMaxMb } = await getSettings(db);
+  const { uploadMaxMb, uploadsEnabled } = await getSettings(db);
+  if (!uploadsEnabled) throw invalidState(UPLOADS_CLOSED_MESSAGE);
   if (file.size > uploadMaxMb * 1024 * 1024) throw new AppError("VALIDATION", `Dosya en fazla ${uploadMaxMb} MB olabilir.`);
   if (file.size <= 0) throw new AppError("VALIDATION", "Dosya boş olamaz.");
 
@@ -125,6 +153,16 @@ export async function submitTicket(db: DB, actor: Actor | null, raw: unknown, no
     }
     const resubmit = t.status === "submitted";
     const settings = await getSettings(tx);
+    if (!settings.uploadsEnabled && input.fileIds.length > 0) throw new AppError("VALIDATION", UPLOADS_CLOSED_MESSAGE);
+
+    if (input.pullRequestId) {
+      const [pr] = await tx
+        .select({ id: ticketPullRequests.id })
+        .from(ticketPullRequests)
+        .where(and(eq(ticketPullRequests.id, input.pullRequestId), eq(ticketPullRequests.ticketId, t.id)))
+        .limit(1);
+      if (!pr) throw invalidState("Seçilen PR bu ticket'a ait değil.");
+    }
 
     const patch: Partial<typeof tickets.$inferInsert> = { status: "submitted", updatedAt: now };
     if (t.status === "extension_pending" || t.status === "withdrawal_pending") {
@@ -151,7 +189,7 @@ export async function submitTicket(db: DB, actor: Actor | null, raw: unknown, no
 
     const [sub] = await tx
       .insert(submissions)
-      .values({ ticketId: t.id, userId: a.id, description: input.description, links: input.links, createdAt: now })
+      .values({ ticketId: t.id, userId: a.id, description: input.description, links: input.links, pullRequestId: input.pullRequestId, createdAt: now })
       .returning({ id: submissions.id });
     if (!sub) throw new Error("Teslim kaydedilemedi.");
     if (fileIds.length > 0) await tx.update(files).set({ submissionId: sub.id }).where(inArray(files.id, fileIds));
@@ -174,7 +212,7 @@ export async function submitTicket(db: DB, actor: Actor | null, raw: unknown, no
       entityId: t.id,
       areaId: t.areaId,
       ticketId: t.id,
-      data: { submissionId: sub.id, links: input.links.length, files: fileIds.length, resubmit },
+      data: { submissionId: sub.id, links: input.links.length, files: fileIds.length, resubmit, pullRequestId: input.pullRequestId },
     });
     return { submissionId: sub.id };
   });

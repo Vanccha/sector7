@@ -77,3 +77,13 @@
 .empty {
   padding: 24px 20px;
 }
+.repoInput {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.repoInput .input {
+  flex: 1;
+  min-width: 0;
+}

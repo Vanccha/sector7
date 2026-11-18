@@ -37,7 +37,7 @@ export async function updateSettings(db: DB, actor: Actor | null, raw: unknown, 
     const current = await getSettings(tx);
     const keys = (Object.keys(SETTING_META) as SettingKey[]).filter((k) => current[k] !== input[k]);
     if (keys.length === 0) return;
-    const changes: Record<string, { from: number; to: number }> = {};
+    const changes: Record<string, { from: number | boolean; to: number | boolean }> = {};
     for (const k of keys) {
       changes[k] = { from: current[k], to: input[k] };
       await tx

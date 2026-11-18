@@ -14,6 +14,8 @@ export const settingsSchema = z.object({
   rejectionsPerSprint: z.number().int().min(0).max(20),
   /** Tek dosya yükleme sınırı (MB). */
   uploadMaxMb: z.number().int().min(1).max(500),
+  /** Aşama 7.5: teslimde sunucu diskine dosya yükleme açık mı (GitHub'a geçişte kapatılır). */
+  uploadsEnabled: z.boolean(),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -26,6 +28,7 @@ export const DEFAULT_SETTINGS: Settings = {
   managerResponseHours: 24,
   rejectionsPerSprint: 2,
   uploadMaxMb: 10,
+  uploadsEnabled: true,
 };
 
 /** Uygulamanın tarih hesaplarında kullandığı saat dilimi (sprint günü vb.). */

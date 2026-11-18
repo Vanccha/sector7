@@ -39,6 +39,7 @@ import {
 import { getSettings } from "@/lib/settings";
 import { isOfferExpired, offerExpiresAt } from "@/lib/ticket-time";
 import { loadPrerequisites } from "./dependencies";
+import { loadSubmissionPullRequests } from "./delivery";
 import { iso, requireAreaViewer, resolveSprint, toSprintRow } from "./plan-common";
 import {
   areaNames,
@@ -191,12 +192,17 @@ export async function getTicketDetail(
     requestId: m.requestId,
     createdAt: m.createdAt.toISOString(),
   }));
+  const prBySubmission = await loadSubmissionPullRequests(
+    db,
+    submissionRows.map((s) => s.id),
+  );
   const submissionViews: SubmissionRow[] = submissionRows.map((s) => ({
     id: s.id,
     user: userOf(s.userId),
     description: s.description,
     links: s.links,
     files: filesBySubmission.get(s.id) ?? [],
+    pullRequest: prBySubmission.get(s.id) ?? null,
     createdAt: s.createdAt.toISOString(),
   }));
   const evaluationViews: EvaluationRow[] = evalRows.map((e) => ({

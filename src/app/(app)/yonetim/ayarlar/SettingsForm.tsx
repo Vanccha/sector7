@@ -2,12 +2,16 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SETTING_META } from "@/lib/contracts/admin";
-import { settingsSchema, type SettingKey, type Settings } from "@/lib/contracts/settings";
+import { DEFAULT_SETTINGS, settingsSchema, type SettingKey, type Settings } from "@/lib/contracts/settings";
 import { updateSettingsAction } from "./actions";
 
-const KEYS = Object.keys(SETTING_META) as SettingKey[];
+type NumKey = { [K in SettingKey]: Settings[K] extends number ? K : never }[SettingKey];
+type BoolKey = Exclude<SettingKey, NumKey>;
 
-function bounds(key: SettingKey): { min: number; max: number } {
+const KEYS = Object.keys(SETTING_META) as SettingKey[];
+const isBool = (k: SettingKey): k is BoolKey => typeof DEFAULT_SETTINGS[k] === "boolean";
+
+function bounds(key: NumKey): { min: number; max: number } {
   const f = settingsSchema.shape[key];
   return { min: f.minValue ?? 0, max: f.maxValue ?? 9999 };
 }
@@ -18,10 +22,12 @@ export function SettingsForm({ values, defaults }: { values: Settings; defaults:
   const [draft, setDraft] = useState<Record<SettingKey, string>>(
     () => Object.fromEntries(KEYS.map((k) => [k, String(values[k])])) as Record<SettingKey, string>,
   );
+  const on = (k: SettingKey) => draft[k] === "true";
   const [errors, setErrors] = useState<Partial<Record<SettingKey, string>>>({});
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   function parse(k: SettingKey): { n: number | null; err: string | null } {
+    if (isBool(k)) return { n: null, err: null };
     const raw = draft[k].trim();
     const { min, max } = bounds(k);
     if (raw === "" || !/^\d+$/.test(raw)) return { n: null, err: "Tam sayı gir." };
@@ -32,14 +38,24 @@ export function SettingsForm({ values, defaults }: { values: Settings; defaults:
 
   const changes = KEYS.filter((k) => {
     const { n, err } = parse(k);
+    if (isBool(k)) return on(k) !== values[k];
     return !err && n !== values[k];
   });
+  const show = (k: SettingKey) => {
+    if (isBool(k)) return values[k] ? "açık" : "kapalı";
+    return `${values[k]} ${SETTING_META[k].unit}`;
+  };
+  const showNew = (k: SettingKey) => (isBool(k) ? (on(k) ? "açık" : "kapalı") : `${parse(k).n} ${SETTING_META[k].unit}`);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Partial<Record<SettingKey, string>> = {};
-    const next = { ...values } as Settings;
+    const next: Record<string, number | boolean> = { ...values };
     for (const k of KEYS) {
+      if (isBool(k)) {
+        next[k] = on(k);
+        continue;
+      }
       const { n, err } = parse(k);
       if (err || n === null) errs[k] = err ?? "Geçersiz değer.";
       else next[k] = n;
@@ -51,7 +67,7 @@ export function SettingsForm({ values, defaults }: { values: Settings; defaults:
     }
     setMessage(null);
     startTransition(async () => {
-      const r = await updateSettingsAction(next);
+      const r = await updateSettingsAction(next as Settings);
       if (r.ok) {
         setMessage({ kind: "ok", text: changes.length === 0 ? "Değişiklik yoktu." : "Ayarlar kaydedildi." });
         router.refresh();
@@ -68,8 +84,44 @@ export function SettingsForm({ values, defaults }: { values: Settings; defaults:
     <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {KEYS.map((k) => {
         const meta = SETTING_META[k];
-        const { min, max } = bounds(k);
         const id = `ayar-${k}`;
+        if (isBool(k)) {
+          const checked = on(k);
+          return (
+            <div key={k} className="cut-panel" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+                <label htmlFor={id} className="label" style={{ margin: 0 }}>
+                  {meta.label}
+                </label>
+                <button
+                  id={id}
+                  type="button"
+                  role="switch"
+                  aria-checked={checked}
+                  aria-describedby={`${id}-yardim`}
+                  onClick={() => setDraft({ ...draft, [k]: String(!checked) })}
+                  style={{
+                    minWidth: 76,
+                    minHeight: 44,
+                    padding: "0 14px",
+                    font: "inherit",
+                    cursor: "pointer",
+                    border: "1px solid var(--btn-line)",
+                    background: checked ? "var(--ac-tx)" : "transparent",
+                    color: checked ? "var(--bg)" : "var(--ac-tx)",
+                  }}
+                >
+                  {checked ? "Açık" : "Kapalı"}
+                </button>
+              </div>
+              <span id={`${id}-yardim`} className="muted" style={{ fontSize: 13 }}>
+                {meta.help}
+              </span>
+              {errors[k] && <span className="field-error">{errors[k]}</span>}
+            </div>
+          );
+        }
+        const { min, max } = bounds(k);
         const isDefault = draft[k].trim() === String(defaults[k]);
         return (
           <div key={k} className="cut-panel" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -121,7 +173,7 @@ export function SettingsForm({ values, defaults }: { values: Settings; defaults:
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {changes.map((k) => (
               <li key={k}>
-                {SETTING_META[k].label}: {values[k]} → {parse(k).n} {SETTING_META[k].unit}
+                {SETTING_META[k].label}: {show(k)} → {showNew(k)}
               </li>
             ))}
           </ul>

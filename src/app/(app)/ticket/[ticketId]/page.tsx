@@ -16,6 +16,12 @@ import { OfferCard } from "@/components/tickets/OfferCard";
 import { StatusBadge, VerdictBadge, fmtDateTime } from "@/components/tickets/shared";
 import { ChannelThread } from "@/components/messaging/ChannelThread";
 import { getChannelView, getTicketChannelId } from "@/server/messaging";
+import { GithubPanel } from "@/components/github/GithubPanel";
+import { PrState } from "@/components/github/PrState";
+import type { TicketGithubView } from "@/lib/contracts/github";
+import { getSettings } from "@/lib/settings";
+import { githubSyncEnabled } from "@/server/github/app";
+import { getTicketGithubView } from "@/server/github/view";
 import { getTicketDetail } from "@/server/ticket-view";
 import { eq } from "drizzle-orm";
 import { user } from "@/db/schema";
@@ -42,6 +48,15 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
 
   const { ticket: t, perms, limits } = d;
   const channelView = await getChannelView(db, actor, { channelId: await getTicketChannelId(db, actor, { ticketId }) });
+  const settings = await getSettings(db);
+  let gh: TicketGithubView | null = null;
+  if (githubSyncEnabled()) {
+    try {
+      gh = await getTicketGithubView(db, actor, t.id);
+    } catch {
+      gh = null;
+    }
+  }
   const pastRequests = d.requests.filter((r) => r.id !== d.pendingRequest?.id);
   const offer: OfferView | null =
     perms.canAnswerOffer && t.offeredAt && t.offerExpiresAt && d.rejections
@@ -123,6 +138,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
 
       </div>
       <div className="page-split__side">
+      {gh ? <GithubPanel ticketId={t.id} view={gh} /> : null}
       {pastRequests.length > 0 ? (
         <section className={`cut-panel ${styles.section}`} aria-labelledby="past-h">
           <h2 className="panel-h" id="past-h">
@@ -155,7 +171,11 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           <h2 className="panel-h" id="submit-h">
             {t.status === "submitted" ? "Yeniden teslim" : "Teslim"}
           </h2>
-          <SubmitForm key={d.submissions[0]?.id ?? "none"} ticketId={t.id} resubmit={d.submissions.length > 0} limits={limits} />
+          <SubmitForm key={d.submissions[0]?.id ?? "none"} ticketId={t.id} resubmit={d.submissions.length > 0}
+            limits={limits}
+            uploadsEnabled={settings.uploadsEnabled}
+            pullRequests={gh?.pullRequests ?? []}
+          />
         </section>
       ) : null}
 
@@ -172,6 +192,17 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                   <span>{s.user.name}</span>
                   <span>{fmtDateTime(s.createdAt)}</span>
                 </div>
+                {(() => {
+                  const pr = (s as { pullRequest?: { number: number; url: string; title: string; merged: boolean } | null }).pullRequest;
+                  return pr ? (
+                    <p className={styles.row}>
+                      <a href={pr.url} rel="noopener noreferrer" target="_blank" style={{ color: "var(--ac-tx)" }}>
+                        PR #{pr.number}
+                      </a>
+                      {pr.merged ? <PrState pr={{ state: "closed", merged: true }} /> : null}
+                    </p>
+                  ) : null;
+                })()}
                 <p className={styles.desc}>{s.description}</p>
                 {s.links.length > 0 ? (
                   <ul className={`${styles.plain} ${styles.links}`} aria-label="Bağlantılar">

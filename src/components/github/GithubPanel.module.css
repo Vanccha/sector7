@@ -1,0 +1,10 @@
+.panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 16px; }
+.block { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; min-width: 0; }
+.h3 { margin: 0; font-size: 15px; }
+.small { margin: 0; font-size: 13px; color: var(--mut); overflow-wrap: anywhere; }
+.link { color: var(--ac-tx); overflow-wrap: anywhere; display: inline-flex; align-items: center; min-height: 44px; }
+.code { font-family: ui-monospace, monospace; font-size: 13px; overflow-wrap: anywhere; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.pr { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; justify-content: space-between; }
+.hint { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin: 0; }
+.link:focus-visible { outline: 2px solid var(--ac-tx); outline-offset: 2px; }

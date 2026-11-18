@@ -5,6 +5,7 @@ import { runAction } from "@/lib/action";
 import { getActor } from "@/lib/auth/session";
 import type { ActionResult } from "@/lib/contracts/errors";
 import type { ArchiveResult } from "@/lib/contracts/plan";
+import { setAreaRepo } from "@/server/github/admin";
 import { archiveArea, createArea, setAreaManager, unarchiveArea, updateArea } from "@/server/areas";
 
 const PATH = "/yonetim/alanlar";
@@ -54,6 +55,14 @@ export async function archiveAreaAction(input: {
 export async function unarchiveAreaAction(input: { areaId: string }): Promise<ActionResult<undefined>> {
   return runAction(async () => {
     await unarchiveArea(db, await getActor(), input);
+    revalidatePath(PATH);
+    return undefined;
+  });
+}
+
+export async function setAreaRepoAction(input: { areaId: string; repo: string }): Promise<ActionResult<undefined>> {
+  return runAction(async () => {
+    await setAreaRepo(db, await getActor(), input);
     revalidatePath(PATH);
     return undefined;
   });

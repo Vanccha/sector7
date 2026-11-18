@@ -81,6 +81,7 @@ describe("updateSettings", () => {
       managerResponseHours: 1,
       rejectionsPerSprint: 0,
       uploadMaxMb: 500,
+      uploadsEnabled: true,
     });
     expect(await getSettings(db)).toEqual({
       sprintLengthDays: 3,
@@ -89,6 +90,7 @@ describe("updateSettings", () => {
       managerResponseHours: 1,
       rejectionsPerSprint: 0,
       uploadMaxMb: 500,
+      uploadsEnabled: true,
     });
   });
 

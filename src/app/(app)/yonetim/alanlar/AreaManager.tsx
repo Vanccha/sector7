@@ -6,6 +6,7 @@ import {
   archiveAreaAction,
   createAreaAction,
   setAreaManagerAction,
+  setAreaRepoAction,
   unarchiveAreaAction,
   updateAreaAction,
 } from "./actions";
@@ -13,7 +14,10 @@ import styles from "./AreaManager.module.css";
 
 type Failure = Extract<ActionResult<unknown>, { ok: false }>;
 
-export function AreaManager({ areas, users }: { areas: AreaRow[]; users: UserOption[] }) {
+type RepoInfo = { org: string; syncEnabled: boolean };
+type AreaWithRepo = AreaRow & { githubRepo?: string | null };
+
+export function AreaManager({ areas, users, github }: { areas: AreaRow[]; users: UserOption[]; github: RepoInfo }) {
   const active = areas.filter((a) => !a.archivedAt);
   const archived = areas.filter((a) => a.archivedAt);
   return (
@@ -30,7 +34,7 @@ export function AreaManager({ areas, users }: { areas: AreaRow[]; users: UserOpt
           <ul className={styles.grid}>
             {active.map((a) => (
               <li key={a.id}>
-                <AreaCard area={a} users={users} />
+                <AreaCard area={a} users={users} github={github} />
               </li>
             ))}
           </ul>
@@ -133,7 +137,7 @@ function NewAreaForm() {
   );
 }
 
-function AreaCard({ area, users }: { area: AreaRow; users: UserOption[] }) {
+function AreaCard({ area, users, github }: { area: AreaWithRepo; users: UserOption[]; github: RepoInfo }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(area.name);
@@ -144,6 +148,17 @@ function AreaCard({ area, users }: { area: AreaRow; users: UserOption[] }) {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [info, setInfo] = useState<string | null>(null);
   const nameId = `area-${area.id}`;
+  const savedRepo = area.githubRepo ?? "";
+  const [repo, setRepo] = useState(savedRepo);
+
+  function saveRepo() {
+    reset();
+    startTransition(async () => {
+      const res = await setAreaRepoAction({ areaId: area.id, repo });
+      if (res.ok) setInfo(repo.trim() ? "GitHub deposu kaydedildi." : "Depo eşlemesi kaldırıldı; bu alan senkron dışı.");
+      else fail(res);
+    });
+  }
 
   function fail(res: Failure) {
     setError(res.error);
@@ -289,6 +304,39 @@ function AreaCard({ area, users }: { area: AreaRow; users: UserOption[] }) {
         </button>
       </div>
       {fields.managerId && <p role="alert">{fields.managerId}</p>}
+
+      <div className={styles.managerRow}>
+        <div className="field">
+          <label className="label" htmlFor={`${nameId}-repo`}>
+            GitHub deposu
+          </label>
+          <div className={styles.repoInput}>
+            {github.org ? <span className="muted" aria-hidden="true">{github.org}/</span> : null}
+            <input
+              id={`${nameId}-repo`}
+              className="input"
+              value={repo}
+              maxLength={100}
+              placeholder="depo-adı"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={(e) => setRepo(e.target.value)}
+              disabled={pending}
+              aria-invalid={fields.repo ? true : undefined}
+              aria-describedby={`${nameId}-repo-help`}
+            />
+          </div>
+          <p id={`${nameId}-repo-help`} className="muted">
+            Boş bırakırsan bu alan GitHub ile senkronlanmaz.
+            {github.syncEnabled ? "" : " GitHub App yapılandırılmadı; depo eşlemesi kaydedilir, senkron App kurulunca başlar."}
+          </p>
+          {fields.repo && <p role="alert">{fields.repo}</p>}
+        </div>
+        <button type="button" className="btn-line" onClick={saveRepo} disabled={pending || repo.trim() === savedRepo}>
+          Kaydet
+        </button>
+      </div>
 
       {warn !== null && (
         <div className="notice notice--hot" role="alert">

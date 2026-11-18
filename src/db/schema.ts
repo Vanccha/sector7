@@ -132,6 +132,8 @@ export const areas = pgTable("areas", {
   managerId: uuid("manager_id").references((): AnyPgColumn => user.id),
   /** Alan silinmez, arşivlenir. */
   archivedAt: ts("archived_at"),
+  /** Aşama 7.5: alanın GitHub deposu (org içindeki ad, ör. "alan-tasarim"). Boşsa alan senkron dışı. */
+  githubRepo: text("github_repo"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -342,6 +344,10 @@ export const tickets = pgTable(
     /** Bağımlılık düzenleyicisindeki konum (masaüstü). */
     posX: real("pos_x"),
     posY: real("pos_y"),
+    /** Aşama 7.5: GitHub issue'su (alanın deposunda) ve iş dalı. Senkron sürecinin çıktısıdır. */
+    githubIssueNumber: integer("github_issue_number"),
+    githubIssueUrl: text("github_issue_url"),
+    githubBranch: text("github_branch"),
     createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id),
@@ -446,10 +452,76 @@ export const submissions = pgTable(
       .references(() => user.id),
     description: text("description").notNull(),
     links: jsonb("links").$type<string[]>().notNull().default([]),
+    /** Aşama 7.5: teslim edilen PR (ticket'a bağlı PR'lardan biri). */
+    pullRequestId: uuid("pull_request_id").references((): AnyPgColumn => ticketPullRequests.id),
     createdAt: createdAt(),
   },
   (t) => [index("submissions_ticket_idx").on(t.ticketId)],
 );
+
+/* ------------------------------------------------------------------ */
+/* GitHub senkronu (Aşama 7.5)                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Senkron kuyruğu: ticket başına tek bekleyen satır (birleşir). `tickets` / `ticket_dependencies`
+ * değişince tetikleyici (göç 0006) ekler/tazeler. İşleyici ticket'ın güncel hâlinden GitHub'daki issue'nun
+ * olması gereken durumunu hesaplayıp uygular (durum tabanlı, idempotent); başarıda satırı siler
+ * (yalnız `enqueuedAt` okunduğundan beri değişmediyse).
+ */
+export const githubOutbox = pgTable(
+  "github_outbox",
+  {
+    ticketId: uuid("ticket_id")
+      .primaryKey()
+      .references(() => tickets.id, { onDelete: "cascade" }),
+    enqueuedAt: ts("enqueued_at").notNull().defaultNow(),
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: ts("next_attempt_at").notNull().defaultNow(),
+    lastError: text("last_error"),
+  },
+  (t) => [index("github_outbox_next_idx").on(t.nextAttemptAt)],
+);
+
+/** Depo başına sprint milestone'u önbelleği. */
+export const githubMilestones = pgTable(
+  "github_milestones",
+  {
+    repo: text("repo").notNull(),
+    sprintId: uuid("sprint_id")
+      .notNull()
+      .references(() => sprints.id),
+    number: integer("number").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.repo, t.sprintId] })],
+);
+
+/** Ticket'a bağlanan PR'lar (webhook'tan; dal öneki ya da gövdedeki issue referansıyla eşlenir). */
+export const ticketPullRequests = pgTable(
+  "ticket_pull_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ticketId: uuid("ticket_id")
+      .notNull()
+      .references(() => tickets.id),
+    repo: text("repo").notNull(),
+    number: integer("number").notNull(),
+    url: text("url").notNull(),
+    title: text("title").notNull(),
+    state: text("state").$type<"open" | "closed">().notNull(),
+    merged: boolean("merged").notNull().default(false),
+    authorLogin: text("author_login"),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("ticket_prs_repo_number_uq").on(t.repo, t.number), index("ticket_prs_ticket_idx").on(t.ticketId)],
+);
+
+/** Webhook teslimat kimlikleri (X-GitHub-Delivery): aynı teslimat iki kez işlenmez. */
+export const githubWebhookDeliveries = pgTable("github_webhook_deliveries", {
+  deliveryId: text("delivery_id").primaryKey(),
+  event: text("event").notNull(),
+  receivedAt: createdAt(),
+});
 
 export const evaluationVerdict = pgEnum("evaluation_verdict", ["good", "bad"]);
 

@@ -22,3 +22,5 @@
 .chipBtn[aria-pressed="true"] { background: var(--ac-tx); color: var(--bg); }
 .hours { max-width: 140px; }
 .small { font-size: 13px; color: var(--mut); margin: 0; }
+.prOption { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; overflow-wrap: anywhere; }
+.prOption input { width: 20px; height: 20px; accent-color: var(--ac-tx); }
