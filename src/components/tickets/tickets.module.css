@@ -14,24 +14,36 @@
 .empty { margin: 0; color: var(--mut); font-size: 14px; }
 .linkBtn { display: inline-flex; align-items: center; min-height: var(--tap); }
 
-/* Kıvılcım efekti */
+/* Kıvılcım efekti: yalnız transform/opacity/stroke-dashoffset; ağır filtre yok */
 .sparkWrap { position: relative; display: inline-flex; }
+.sparkBusy { opacity: 0.9; }
 .fx {
-  position: absolute; left: -20px; top: -28px; pointer-events: none; overflow: visible;
-  width: calc(100% + 40px); height: calc(100% + 56px);
+  position: absolute; left: -40px; top: -34px; pointer-events: none; overflow: visible; z-index: 2;
+  width: calc(100% + 80px); height: calc(100% + 68px);
 }
 .bolt { fill: none; stroke: rgb(var(--fx-bolt)); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round;
-  filter: drop-shadow(0 0 6px rgb(var(--fx-glow))); stroke-dasharray: 160; stroke-dashoffset: 160; opacity: 0; }
+  stroke-dasharray: 160; stroke-dashoffset: 160; opacity: 0; }
+.glow { fill: none; stroke: rgba(var(--fx-glow), 0.4); stroke-width: 10; stroke-linejoin: round; stroke-linecap: round;
+  stroke-dasharray: 160; stroke-dashoffset: 160; opacity: 0; }
 .branch { fill: none; stroke: rgb(var(--fx-branch)); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 60; stroke-dashoffset: 60; opacity: 0; }
+.ring { fill: none; stroke: rgb(var(--fx-ring)); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .dot { opacity: 0; transform-box: fill-box; transform-origin: center; }
 .dot1 { fill: var(--fx-burst-1); }
 .dot2 { fill: var(--fx-burst-2); }
 .dot3 { fill: var(--fx-burst-3); }
-.fxOn .bolt { animation: boltDraw 0.7s ease-out forwards; }
+.fxOn .bolt, .fxOn .glow { animation: boltDraw 0.7s ease-out forwards; }
 .fxOn .branch { animation: boltDraw 0.7s 0.12s ease-out forwards; }
 .fxOn .dot { animation: dotBurst 0.8s 0.1s ease-out forwards; }
+.fxOn .ring { animation: ringOut 0.8s 0.05s ease-out forwards; }
 @keyframes boltDraw { 0% { stroke-dashoffset: 160; opacity: 1; } 60% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
 @keyframes dotBurst { 0% { opacity: 1; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2.4); } }
+@keyframes ringOut { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.6); } }
+
+/* Teklif kartı "düşer" */
+.drop { animation: dropIn 0.5s var(--ease-snap); }
+@keyframes dropIn { 0% { opacity: 0; transform: translateY(-28px) scale(0.98); } 60% { opacity: 1; transform: translateY(4px); } 100% { transform: none; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .fxOn .bolt, .fxOn .branch, .fxOn .dot { animation: none; opacity: 0; }
+  .fxOn .bolt, .fxOn .glow, .fxOn .branch, .fxOn .dot, .fxOn .ring { animation: none; opacity: 0; }
+  .drop { animation: none; }
 }

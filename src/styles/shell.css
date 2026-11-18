@@ -1,0 +1,410 @@
+/* ============================================================
+ * Aşama 6: uygulama kabuğu, mobil alt sekme çubuğu, ortak durumlar
+ * ============================================================ */
+
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.app-main {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-width: 0;
+  padding: 20px calc(var(--gutter) + var(--safe-r)) calc(48px + var(--bottom-nav-h)) calc(var(--gutter) + var(--safe-l));
+}
+@media (max-width: 720px) {
+  .app-main {
+    padding-top: 16px;
+    padding-bottom: calc(24px + var(--bottom-nav-h));
+  }
+}
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -100px;
+  z-index: 100;
+  padding: 10px 14px;
+  background: var(--ac);
+  color: var(--on-ac);
+}
+.skip-link:focus {
+  top: 8px;
+  color: var(--on-ac);
+}
+
+/* Başlık */
+.app-header {
+  position: relative;
+  border-bottom: 1px solid var(--line);
+  padding: calc(10px + var(--safe-t)) calc(var(--gutter) + var(--safe-r)) 0 calc(var(--gutter) + var(--safe-l));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Sol alttaki vurgu çizgisi yalnız mobilde: masaüstünde ilk sekmenin altına düşüp aktif sekme gibi görünüyordu. */
+.app-header::after {
+  content: none;
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 96px;
+  height: 2px;
+  background: var(--ac-tx);
+}
+.app-header__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+}
+.app-header__who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+  padding-right: 6px;
+}
+.app-header__who small {
+  font-size: 12px;
+  color: var(--mut);
+}
+.app-header__nav {
+  display: block;
+}
+.app-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--tx);
+  min-height: var(--tap);
+}
+.app-header .brand:hover {
+  color: var(--tx);
+}
+.sprint-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 14px;
+  min-height: 28px;
+}
+.sprint-status__lamps {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.sprint-status--none {
+  color: var(--mut);
+}
+.dy.is-past::before {
+  opacity: 0.6;
+}
+.dy.is-now::before {
+  outline: 1px solid var(--ac-tx);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    padding-bottom: 8px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .app-header::after {
+    content: "";
+    width: 64px;
+  }
+  .app-header__top {
+    flex: 0 0 auto;
+  }
+  .app-header .wordmark,
+  .app-header__user,
+  .app-header__nav,
+  .sprint-status__long {
+    display: none;
+  }
+  .sprint-status {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 10px;
+    font-size: 13px;
+    min-width: 0;
+  }
+  .sprint-status .dy {
+    width: 7px;
+    height: 22px;
+  }
+  .sprint-status .dy.wk {
+    margin-left: 3px;
+  }
+  .sprint-status__text {
+    white-space: nowrap;
+  }
+  /* Dar ekranda gün çubuğu kalan alana sığar (uzun sprintlerde dilimler incelir); sola taşıp markanın altına girmez. */
+  .sprint-status {
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+  .sprint-status .days {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+  .sprint-status .days .dy {
+    flex: 0 1 7px;
+    min-width: 2px;
+  }
+}
+@media (max-width: 420px) {
+  /* Çok dar ekranda yalnız yanan lamba. */
+  .sprint-status__lamps .lamp:not(.is-g):not(.is-y):not(.is-r) {
+    display: none;
+  }
+}
+@media (min-width: 721px) {
+  .bottom-nav,
+  .menu-sheet,
+  .menu-backdrop {
+    display: none !important;
+  }
+}
+
+/* Alt sekme çubuğu */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  height: var(--bottom-nav-h);
+  padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
+  background: var(--panel);
+  border-top: 1px solid var(--line2);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.bottom-nav__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: var(--tap);
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--mut);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav__item:hover,
+.bottom-nav__item:active {
+  color: var(--tx);
+}
+.bottom-nav__item[aria-current="page"],
+.bottom-nav__item[aria-expanded="true"] {
+  color: var(--ac-tx);
+}
+.bottom-nav__item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 28%;
+  right: 28%;
+  height: 3px;
+  background: var(--ac-tx);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 3px) 100%, 3px 100%);
+}
+.bottom-nav__item:focus-visible {
+  outline-offset: -4px;
+}
+.bottom-nav__icon {
+  position: relative;
+  display: inline-flex;
+}
+.bottom-nav__badge {
+  position: absolute;
+  top: -6px;
+  left: 14px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--hot);
+  color: var(--on-hot);
+  font-variant-numeric: tabular-nums;
+  clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px));
+}
+
+/* Menü alt sayfası */
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  opacity: 0.75;
+  animation: fadeIn 0.2s ease-out;
+}
+.menu-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  max-height: 85dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--panel2);
+  padding: 20px calc(var(--gutter) + var(--safe-r)) calc(16px + var(--safe-b)) calc(var(--gutter) + var(--safe-l));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  clip-path: polygon(0 var(--cut), var(--cut) 0, 100% 0, 100% 100%, 0 100%);
+  animation: sheetUp 0.28s var(--ease-snap);
+}
+.menu-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.menu-sheet__who {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+.menu-sheet__who small {
+  color: var(--mut);
+  font-size: 13px;
+}
+.menu-sheet__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line2);
+  background: none;
+  color: var(--tx);
+  font-size: 16px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+.menu-sheet__link:hover {
+  color: var(--ac-hi);
+}
+.menu-sheet__link[aria-current="page"] {
+  color: var(--ac-tx);
+}
+.menu-sheet__out {
+  padding-top: 8px;
+}
+
+/* Ortak: boş durum, hata kutusu, iskelet, tablo kaydırma */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 20px;
+  background: var(--panel);
+  color: var(--mut);
+  font-size: 14px;
+  clip-path: polygon(0 0, calc(100% - var(--cut-sm)) 0, 100% var(--cut-sm), 100% 100%, var(--cut-sm) 100%, 0 calc(100% - var(--cut-sm)));
+}
+.error-box {
+  border: 1px solid var(--hot-tx);
+  border-left-width: 4px;
+  background: var(--panel);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--tx);
+}
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.skeleton {
+  display: block;
+  min-height: 16px;
+  background: linear-gradient(90deg, var(--panel) 0, var(--panel2) 50%, var(--panel) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+.skeleton--card {
+  height: 96px;
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+}
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.stack-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  .skeleton {
+    background: var(--panel);
+  }
+}
+
+/* Yatay kayan sekme satırları: kaydırma çubuğu gizli (dokunma/tekerlek/klavye ile kayar). */
+.nav-scroll {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-scroll::-webkit-scrollbar {
+  display: none;
+}

@@ -31,6 +31,7 @@
   --mk1: #2b3fd1;
   --mk2: #d21f14;
   --on-ac: #ffffff;
+  --on-hot: #ffffff;
   /* Kıvılcım efekti (canvas) için RGB üçlüleri */
   --fx-glow: 80, 100, 255;
   --fx-bolt: 70, 92, 255;
@@ -60,6 +61,8 @@
   --tri: #141310;
   --btn-line: #45474d;
   --rec: #c77700;
+  --rec-tx: #111214;
+  --on-ac: #111214;
   --mk1: #ffb547;
   --mk2: #ff4033;
   --fx-glow: 255, 170, 60;
@@ -89,6 +92,7 @@
   --hot-hi: #ffd34d;
   --rec: #f2b705;
   --rec-tx: #111214;
+  --on-hot: #111214;
   --mk1: #ff4033;
   --mk2: #7a0e09;
   --fx-glow: 255, 70, 50;
@@ -111,6 +115,17 @@
   --ease-snap: cubic-bezier(0.2, 0.9, 0.1, 1);
   --gutter: 16px;
   --tap: 44px;
+  --bottom-nav-h: 0px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+@media (max-width: 720px) {
+  :root {
+    --bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (min-width: 768px) {

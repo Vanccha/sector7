@@ -161,3 +161,15 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - Giriş/çıkış artık denetim kaydına yazılır (Better Auth `session.create.after` / `session.delete.after`, yalnız kullanıcının kendi çıkışı). Kayıt yazılamazsa giriş bozulmaz.
 - Kişisel veri (e-posta, telefon) listelerde yoktur; tek tek "göster" ile açılır ve her açılış `personal_data.view` olarak kaydedilir.
 - Son aktif ana yönetici pasifleştirilemez; kimse kendini pasifleştiremez; pasif kişiye ana yönetici verilemez.
+
+## Aşama 6 — Görsel cila ve PWA (2026-11-18)
+
+- **Mobil gezinme:** ≤720px'te altta sabit sekme çubuğu (Ana sayfa · Ticket'larım · Mesajlar · Bildirimler · Menü; rozetler canlı), "Menü" alt sayfası (Alanlarım, Yönetim, bildirim tercihleri, çıkış). `--bottom-nav-h` ve `env(safe-area-inset-*)` ile çentik/ev çubuğu payı; dokunma hedefi ≥44px. Masaüstünde üst sekmeler.
+- **Başlık:** mobilde işaret + BETA + kompakt gün çubuğu/lamba; gün dilimleri kalan alana göre incelir (uzun sprintte taşmaz), çok dar ekranda yalnız yanan lamba. Sol alttaki vurgu çizgisi yalnız mobilde (masaüstünde ilk sekmeyi aktif gibi gösteriyordu).
+- **Tema:** tüm renkler token'lardan; kontrast için kehribar temada vurgu üstü yazı koyu (`--on-ac`, `--rec-tx`), yeni `--on-hot` (rozet yazısı). Animasyonlar `prefers-reduced-motion`'a uyar (genel kural).
+- **Kıvılcım efekti:** SVG şimşek/dal/halka (yalnız transform/opacity/stroke-dashoffset), ardından teklif kartı düşer; azaltılmış harekette yok.
+- **PWA:** `app/manifest.ts` (AllSpark, standalone, kısayollar), ikonlar ikili dosya olmadan `ImageResponse` ile işaret SVG'sinden (192/512/maskable, favicon, apple-touch). `themeColor` aktif sprint temasından (`generateViewport`); aktif sprint istek başına bir kez okunur (`getRequestSprint`, React `cache`).
+- **Service worker:** push işleyicilerine ek olarak yalnız `/offline.html` ve `/_next/static/` (değişmez dosyalar) önbelleğe alınır; gezinme ağdan, hata olursa çevrimdışı sayfası. **Oturumlu HTML ve `/api/` asla önbelleğe alınmaz** (kişisel veri). Geliştirmede SW yalnız push açılınca ya da `NEXT_PUBLIC_SW_DEV=1` ile kaydedilir (eski önbellek karışıklığı olmasın).
+- **Kurulum daveti:** `beforeinstallprompt` (Chrome/Edge/Android) ya da iOS talimatı; ikinci oturumdan sonra, "Şimdi değil" 14 gün hatırlanır, standalone'da hiç görünmez.
+- **Demo verisi:** `npm run db:demo` (yalnız geliştirme, idempotent, mevcut veriye dokunmaz). Havuzda demo dışı ticket varsa demo çekimleri yalnız demo alanlarından yapılır.
+- **Doğrulama:** ekranlar demo verisiyle 390px (iframe) ve masaüstü genişliğinde tarayıcıda incelendi; mobil başlıkta gün çubuğunun markayla çakışması, duraklı geri sayımın taşması, Windows'ta görünen yatay kaydırma çubuğu ve masaüstündeki yanıltıcı vurgu çizgisi bu incelemede bulunup düzeltildi.

@@ -17,7 +17,7 @@ const style: React.CSSProperties = {
   fontWeight: 700,
   lineHeight: 1,
   background: "var(--hot)",
-  color: "var(--on-ac)",
+  color: "var(--on-hot)",
   fontVariantNumeric: "tabular-nums",
   clipPath: "polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))",
 };

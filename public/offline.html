@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070915">
+<title>Bağlantı yok · AllSpark</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:#070915;color:#e8e9f3;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center}
+  main{max-width:360px}
+  svg{width:88px;height:auto;margin-bottom:20px}
+  h1{margin:0 0 10px;font-size:22px;letter-spacing:.04em}
+  p{margin:0 0 24px;color:#c9cce4;line-height:1.5}
+  button{min-height:44px;padding:0 24px;font:inherit;font-weight:600;color:#fff;background:#2b3fd1;border:1px solid #1e2b93;cursor:pointer;
+    clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+  button:focus-visible{outline:2px solid #7d8cff;outline-offset:3px}
+</style>
+</head>
+<body>
+<main>
+  <svg viewBox="0 0 100 76" aria-hidden="true">
+    <polygon points="40,6 52,6 84,74 70,74 46,24 34,48 20,48" fill="#2b3fd1"/>
+    <polygon points="56,0 66,0 100,74 90,74" fill="#d21f14"/>
+    <polygon points="22,48 34,48 24,70 4,70 8,62 18,62" fill="#e8e9f3"/>
+  </svg>
+  <h1>BAĞLANTI YOK</h1>
+  <p>Bağlantı yok. İnternete bağlanınca sayfa kendiliğinden yenilenir.</p>
+  <button type="button" id="retry">Yeniden dene</button>
+</main>
+<script>
+  document.getElementById("retry").addEventListener("click", function () { location.reload(); });
+  window.addEventListener("online", function () { location.reload(); });
+</script>
+</body>
+</html>

@@ -43,7 +43,7 @@ export function BellLink() {
             fontSize: 11,
             fontWeight: 700,
             background: "var(--hot)",
-            color: "var(--on-ac)",
+            color: "var(--on-hot)",
             clipPath: "polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))",
           }}
         >

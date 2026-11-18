@@ -82,10 +82,11 @@ export function Countdown({
         fontWeight: 700,
         fontSize,
         color: paused ? "var(--mut)" : color,
-        whiteSpace: "nowrap",
+        flexWrap: "wrap",
+        maxWidth: "100%",
       }}
     >
-      {formatRemaining(ms)}
+      <span style={{ whiteSpace: "nowrap" }}>{formatRemaining(ms)}</span>
       {paused && <span style={{ fontSize: Math.max(11, fontSize - 4), fontWeight: 500 }}>· durdu (cevap bekleniyor)</span>}
     </span>
   );

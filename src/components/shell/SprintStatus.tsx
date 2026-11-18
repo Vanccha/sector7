@@ -3,13 +3,24 @@ import { dayPhases, LAMP_LABELS } from "@/lib/sprint";
 
 const PHASE_CLS = { 1: "is-g", 2: "is-y", 3: "is-r" } as const;
 
-/** Başlıktaki lambalar ve gün çubuğu (yalnız gösterim). */
+/** Başlıktaki lambalar ve gün çubuğu (yalnız gösterim). Mobilde kompakt görünür. */
 export function SprintStatus({ sprint, compact = false }: { sprint: SprintView | null; compact?: boolean }) {
-  if (!sprint) return <span className="muted" style={{ fontSize: 14 }}>Aktif sprint yok</span>;
+  if (!sprint) {
+    return (
+      <div className="sprint-status sprint-status--none">
+        <span className="sprint-status__lamps" aria-hidden="true">
+          <span className="lamp" />
+          <span className="lamp" />
+          <span className="lamp" />
+        </span>
+        <span>Aktif sprint yok</span>
+      </div>
+    );
+  }
   const phases = dayPhases(sprint.lengthDays);
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 18px", alignItems: "center", fontSize: 14 }}>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+    <div className="sprint-status">
+      <span className="sprint-status__lamps">
         <span className={sprint.lamp === "green" ? "lamp is-g" : "lamp"} aria-hidden="true" />
         <span className={sprint.lamp === "yellow" ? "lamp is-y" : "lamp"} aria-hidden="true" />
         <span className={sprint.lamp === "red" ? "lamp is-r" : "lamp"} aria-hidden="true" />
@@ -24,6 +35,7 @@ export function SprintStatus({ sprint, compact = false }: { sprint: SprintView |
               "dy",
               i > 0 && prev !== ph ? "wk" : "",
               d <= sprint.day ? PHASE_CLS[ph] : "",
+              d < sprint.day ? "is-past" : "",
               d === sprint.day ? "is-now" : "",
             ]
               .filter(Boolean)
@@ -32,9 +44,9 @@ export function SprintStatus({ sprint, compact = false }: { sprint: SprintView |
           })}
         </span>
       )}
-      <span className="muted">
-        {sprint.name}, gün {sprint.day} / {sprint.lengthDays}
-        {!compact && <>, {sprint.daysLeft} gün kaldı</>}
+      <span className="muted sprint-status__text">
+        <span className="sprint-status__long">{sprint.name}, </span>gün {sprint.day} / {sprint.lengthDays}
+        {!compact && <span className="sprint-status__long">, {sprint.daysLeft} gün kaldı</span>}
       </span>
     </div>
   );

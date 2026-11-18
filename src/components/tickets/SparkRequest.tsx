@@ -9,10 +9,13 @@ import styles from "./tickets.module.css";
 
 function SparkFx({ on }: { on: boolean }) {
   return (
-    <svg className={`${styles.fx} ${on ? styles.fxOn : ""}`} viewBox="0 0 200 80" preserveAspectRatio="none" aria-hidden="true">
+    <svg className={`${styles.fx} ${on ? styles.fxOn : ""}`} viewBox="0 0 200 80" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <circle className={styles.ring} cx="100" cy="40" r="26" />
+      <polyline className={styles.glow} points="10,40 60,18 80,44 120,12 150,46 190,30" />
       <polyline className={styles.bolt} points="10,40 60,18 80,44 120,12 150,46 190,30" />
       <polyline className={styles.branch} points="80,44 96,66 118,58" />
       <polyline className={styles.branch} points="120,12 138,4 156,10" />
+      <polyline className={styles.branch} points="60,18 46,6 30,8" />
       <circle className={`${styles.dot} ${styles.dot1}`} cx="60" cy="18" r="4" />
       <circle className={`${styles.dot} ${styles.dot2}`} cx="120" cy="12" r="3" />
       <circle className={`${styles.dot} ${styles.dot3}`} cx="150" cy="46" r="4" />
@@ -67,16 +70,18 @@ export function SparkRequest({ initial }: { initial: MyTicketsView }) {
 
   if (offer) {
     return (
-      <OfferCard
-        offer={offer}
-        rejections={quota}
-        onRejected={(q) => {
-          setQuota(q);
-          setOffer(null);
-          setRejected(true);
-          setMessage("Teklif kapandı. Hazır olduğunda yenisini isteyebilirsin.");
-        }}
-      />
+      <div className={styles.drop}>
+        <OfferCard
+          offer={offer}
+          rejections={quota}
+          onRejected={(q) => {
+            setQuota(q);
+            setOffer(null);
+            setRejected(true);
+            setMessage("Teklif kapandı. Hazır olduğunda yenisini isteyebilirsin.");
+          }}
+        />
+      </div>
     );
   }
 
@@ -105,9 +110,9 @@ export function SparkRequest({ initial }: { initial: MyTicketsView }) {
         </div>
       ) : (
         <div className={styles.actions}>
-          <span className={styles.sparkWrap}>
-            <button type="button" className="btn-solid" onClick={onClick} disabled={noSprint || pending}>
-              {rejected ? "Yenisini iste" : "Kıvılcım çak"}
+          <span className={`${styles.sparkWrap} ${pending ? styles.sparkBusy : ""}`}>
+            <button type="button" className="btn-solid" onClick={onClick} disabled={noSprint || pending} aria-busy={pending}>
+              {pending ? "Kıvılcım çakılıyor…" : rejected ? "Yenisini iste" : "Kıvılcım çak"}
             </button>
             <SparkFx on={fx} />
           </span>

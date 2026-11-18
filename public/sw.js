@@ -1,10 +1,56 @@
-/* SECTOR7 service worker — yalnız push bildirimi. Önbellekleme yok. */
-self.addEventListener("install", () => {
-  self.skipWaiting();
+/* AllSpark service worker: push bildirimi + çevrimdışı sayfa.
+   Oturumlu HTML ve API yanıtları ASLA önbelleğe alınmaz (kişisel veri). */
+const CACHE = "allspark-v1";
+const OFFLINE_URL = "/offline.html";
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((c) => c.add(new Request(OFFLINE_URL, { cache: "reload" })))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })(),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Gezinme: ağdan; ağ hatasında çevrimdışı sayfa. HTML önbelleğe yazılmaz.
+  if (req.mode === "navigate") {
+    event.respondWith(fetch(req).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
+    return;
+  }
+
+  // Değişmez derleme çıktıları: cache-first.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.match(req).then(
+        (hit) =>
+          hit ||
+          fetch(req).then((res) => {
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(req, copy));
+            }
+            return res;
+          }),
+      ),
+    );
+  }
+  // /api/ ve diğer her şey: dokunulmadan ağa.
 });
 
 self.addEventListener("push", (event) => {

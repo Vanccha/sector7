@@ -1,6 +1,6 @@
 # SECTOR7 — AllSpark çalışma sistemi
 
-AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA, Aşama 5 (Ana yönetici paneli)**.
+AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA — altı aşamanın hepsi tamam** (temel, plan, ticket döngüsü, iletişim, ana yönetici paneli, görsel cila ve PWA).
 
 - İş kuralları: [`PROMPT.md`](PROMPT.md)
 - Teknik kararlar: [`docs/KARARLAR.md`](docs/KARARLAR.md)
@@ -37,6 +37,16 @@ Tarayıcıda <http://localhost:3000>.
   npm run admin:create -- --username ali --name "Ali Veli" --email ali@example.com
   ```
 - Seed tekrar çalıştırılabilir; var olan kayıtları çoğaltmaz.
+
+### Demo verisi (isteğe bağlı)
+
+Tüm ekranları gerçekçi veriyle görmek için, geliştirme veritabanına "Demo · …" önekli alanlar, kişiler, ticket'lar, talepler, mesajlar ve bildirimler ekler (mevcut veriye dokunmaz; üretimde çalışmaz; ikinci çalıştırmada "zaten var" der):
+
+```powershell
+npm run db:demo
+```
+
+Hesaplar: `demo.admin` (ana yönetici), `demo.yonetici1..3` (alan yöneticileri), `demo.uye1..6`, `demo.pasif` (pasif). Şifre `.env`'deki `DEMO_PASSWORD`, yoksa lokal varsayılan `demo12345`. Bekleyen teklif 30 dk sonra kendiliğinden havuza döner.
 
 ### Deneme akışı
 
@@ -77,6 +87,11 @@ Zamanlanmış işler (süre uyarısı/dolumu, teklif dolumu, talep hatırlatmas�
 19. **Ayarlar**: sprint süresi, teslim süresi, uyarı, yönetici cevap süresi, red hakkı, dosya sınırı. Değişiklikler bundan sonraki işlemlere uygulanır.
 20. **Denetim kaydı**: kişi, alan, ticket, eylem ve tarihe göre süz; mesaj metinleri görünür; **CSV indir**.
 
+**Görsel dil ve telefon (Aşama 6)**
+
+21. Tema sprint gününe göre değişir: ilk üçte bir mavi, ikinci kehribar, son kırmızı (başlıkta gün çubuğu ve lamba). Telefonda altta sekme çubuğu (Ana sayfa, Ticket'larım, Mesajlar, Bildirimler, Menü).
+22. **Ana ekrana ekleme (PWA):** üretim derlemesinde (`npm run build && npm start`) Chrome/Edge adres çubuğundaki "Yükle" simgesi ya da ikinci girişte çıkan "AllSpark'ı ana ekrana ekle" şeridi; iPhone'da Safari → Paylaş → Ana Ekrana Ekle. Bağlantı yokken sade bir çevrimdışı sayfası görünür; oturumlu sayfalar hiçbir zaman önbelleğe alınmaz. Geliştirme sunucusunda service worker yalnız push açılınca (ya da `NEXT_PUBLIC_SW_DEV=1`) kaydedilir.
+
 ### Faydalı komutlar
 
 | Komut | Ne yapar |
@@ -90,6 +105,7 @@ Zamanlanmış işler (süre uyarısı/dolumu, teklif dolumu, talep hatırlatmas�
 | `npm run db:seed` | Başlangıç verisi |
 | `npm run db:studio` | Drizzle Studio (veritabanı gezgini) |
 | `npm run jobs:tick` | Zamanlanmış işleri bir kez çalıştırır |
+| `npm run db:demo` | Lokal demo verisi (yalnız geliştirme) |
 | `npm run push:keys` | Web Push için VAPID anahtarı üretir (`.env`'e eklenir) |
 
 ## Testler

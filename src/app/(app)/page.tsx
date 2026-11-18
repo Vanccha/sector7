@@ -14,7 +14,7 @@ export default async function HomePage() {
     ? await db.select({ name: areas.name }).from(areas).where(eq(areas.id, actor.homeAreaId)).limit(1)
     : [];
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
+    <div className="stack-page" style={{ maxWidth: 640 }}>
       <h1 className="h-wide" style={{ margin: 0, fontSize: 26, lineHeight: 1.2 }}>
         Merhaba, {actor.name.split(" ")[0]}
       </h1>
@@ -26,14 +26,12 @@ export default async function HomePage() {
         </p>
       </section>
       <SparkRequest initial={view} />
-      <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="active-h">
+      <section className="skeleton-stack" aria-labelledby="active-h">
         <h2 className="panel-h" id="active-h">
           Üstlendiklerin
         </h2>
         {view.active.length === 0 ? (
-          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-            Şu an üstlendiğin bir ticket yok.
-          </p>
+          <p className="empty-state">Şu an üstlendiğin bir ticket yok.</p>
         ) : (
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
             {view.active.slice(0, 3).map((t) => (

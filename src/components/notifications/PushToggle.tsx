@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
+import { registerSw } from "@/components/pwa/registerSw";
 import { removePushSubscriptionAction, savePushSubscriptionAction } from "@/app/(app)/bildirimler/actions";
 
 function toKey(b64url: string): Uint8Array<ArrayBuffer> {
@@ -67,7 +68,8 @@ export function PushToggle({
           setMsg({ ok: false, text: "İzin verilmedi, push açılmadı." });
           return;
         }
-        const reg = await navigator.serviceWorker.register("/sw.js");
+        const reg = await registerSw();
+        if (!reg) throw new Error("sw");
         await navigator.serviceWorker.ready;
         const sub =
           (await reg.pushManager.getSubscription()) ??
