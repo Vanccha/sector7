@@ -2,13 +2,16 @@ import { Suspense } from "react";
 import type { Actor } from "@/lib/contracts/actor";
 import { rolesOf, ROLE_LABELS } from "@/lib/contracts/actor";
 import type { SprintView } from "@/lib/current-sprint";
+import { BellLink } from "./BellLink";
 import { Brand } from "./Brand";
 import { NavLinks, type NavItem } from "./NavLinks";
 import { SignOutButton } from "./SignOutButton";
 import { SprintStatus } from "./SprintStatus";
 
 export function navFor(actor: Actor): NavItem[] {
-  const items: NavItem[] = [{ href: "/", label: "Ana sayfa" }, { href: "/ticketlarim", label: "Ticket'larım" }];
+  const items: NavItem[] = [{ href: "/", label: "Ana sayfa" }, { href: "/ticketlarim", label: "Ticket'larım" },
+    { href: "/mesajlar", label: "Mesajlar", badge: "messages" },
+  ];
   if (actor.isMainAdmin || actor.managedAreaIds.length > 0) items.push({ href: "/alan", label: "Alanlarım" });
   if (actor.isMainAdmin) items.push({ href: "/yonetim", label: "Yönetim" });
   return items;
@@ -31,7 +34,8 @@ export function AppHeader({ actor, sprint }: { actor: Actor; sprint: SprintView 
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <Brand />
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 14 }}>
+          <BellLink />
           <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", lineHeight: 1.2 }}>
             <span style={{ fontWeight: 600 }}>{actor.name}</span>
             <span className="muted" style={{ fontSize: 12 }}>

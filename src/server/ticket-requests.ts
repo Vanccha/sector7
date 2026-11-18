@@ -88,10 +88,10 @@ export async function postRequestMessage(
   actor: Actor | null,
   raw: { requestId: string; body: string },
   now: Date = new Date(),
-): Promise<void> {
+): Promise<{ messageId: string }> {
   const a = requireActor(actor);
   const input = requestMessageSchema.parse(raw);
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const { request, ticket } = await lockRequest(tx, input.requestId);
     if (request.status !== "pending") throw invalidState(NOT_PENDING);
     const isRequester = request.requesterId === a.id;
@@ -140,6 +140,7 @@ export async function postRequestMessage(
       ticketId: ticket.id,
       data: { messageId },
     });
+    return { messageId };
   });
 }
 

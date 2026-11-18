@@ -13,6 +13,8 @@ import {
 import { Countdown } from "@/components/tickets/Countdown";
 import { OfferCard } from "@/components/tickets/OfferCard";
 import { StatusBadge, VerdictBadge, fmtDateTime } from "@/components/tickets/shared";
+import { ChannelThread } from "@/components/messaging/ChannelThread";
+import { getChannelView, getTicketChannelId } from "@/server/messaging";
 import { getTicketDetail } from "@/server/ticket-view";
 import { EvaluateForm } from "./EvaluateForm";
 import { RequestCreate } from "./RequestCreate";
@@ -35,6 +37,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
   if (!d) notFound();
 
   const { ticket: t, perms, limits } = d;
+  const channelView = await getChannelView(db, actor, { channelId: await getTicketChannelId(db, actor, { ticketId }) });
   const pastRequests = d.requests.filter((r) => r.id !== d.pendingRequest?.id);
   const offer: OfferView | null =
     perms.canAnswerOffer && t.offeredAt && t.offerExpiresAt && d.rejections
@@ -83,10 +86,17 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
       </section>
 
       {d.pendingRequest ? (
-        <RequestPanel request={d.pendingRequest} messages={d.messages} perms={perms} maxGrantedHours={limits.maxGrantedHours} />
+        <RequestPanel request={d.pendingRequest} perms={perms} maxGrantedHours={limits.maxGrantedHours} />
       ) : canRequest ? (
         <RequestCreate ticketId={t.id} canExtension={perms.canRequestExtension} canWithdrawal={perms.canRequestWithdrawal} />
       ) : null}
+
+      <section className={`cut-panel ${styles.section}`} aria-labelledby="talk-h">
+        <h2 className="panel-h" id="talk-h">
+          Konuşma
+        </h2>
+        <ChannelThread view={channelView} ticketChannel />
+      </section>
 
       {pastRequests.length > 0 ? (
         <section className={`cut-panel ${styles.section}`} aria-labelledby="past-h">

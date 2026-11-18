@@ -1,5 +1,6 @@
 /** Uygulama sürecinde zamanlayıcıyı başlatır (src/instrumentation.ts çağırır). */
 import { db } from "@/db";
+import { dispatchPendingPush } from "./push";
 import { runScheduledTick } from "./scheduler";
 
 const INTERVAL_MS = 60_000;
@@ -10,6 +11,11 @@ async function tick() {
     await runScheduledTick(db);
   } catch (e) {
     console.error("[zamanlayıcı] tarama başarısız:", e);
+  }
+  try {
+    await dispatchPendingPush(db);
+  } catch (e) {
+    console.error("[zamanlayıcı] push süpürmesi başarısız:", e);
   }
 }
 

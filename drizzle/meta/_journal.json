@@ -15,6 +15,13 @@
       "when": 1795014002307,
       "tag": "0001_ticket_cycle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795017597171,
+      "tag": "0002_communication",
+      "breakpoints": true
     }
   ]
 }

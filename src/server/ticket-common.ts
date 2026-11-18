@@ -11,6 +11,7 @@ import { forbidden, notFound } from "@/lib/contracts/errors";
 import type { UserOption } from "@/lib/contracts/plan";
 import type { Countdown, RejectionQuota, TicketCard } from "@/lib/contracts/tickets";
 import { iso } from "./plan-common";
+import { publishEvent } from "./realtime/publish";
 
 export type TicketRow = typeof tickets.$inferSelect;
 export type RequestDbRow = typeof ticketRequests.$inferSelect;
@@ -78,7 +79,7 @@ export async function ensureTicketChannel(tx: DbOrTx, t: { id: string; title: st
   return n.id;
 }
 
-/** Ticket konuşmasına mesaj yazar. authorId null ise sistem mesajı. */
+/** Ticket konuşmasına mesaj yazar (gerçek zaman olayı dahil). authorId null ise sistem mesajı. Bildirim ÜRETMEZ. */
 export async function postTicketMessage(
   tx: DbOrTx,
   t: { id: string; title: string; areaId: string },
@@ -96,6 +97,18 @@ export async function postTicketMessage(
     })
     .returning({ id: messages.id });
   if (!row) throw new Error("Mesaj kaydedilemedi.");
+  // Görme süzmesi için ticket'ın (bu transaction'daki) güncel kişisi.
+  const [cur] = await tx.select({ assigneeId: tickets.assigneeId }).from(tickets).where(eq(tickets.id, t.id)).limit(1);
+  await publishEvent(tx, {
+    kind: "message",
+    channelId,
+    channelKind: "ticket",
+    areaId: t.areaId,
+    ticketId: t.id,
+    ticketAssigneeId: cur?.assigneeId ?? null,
+    messageId: row.id,
+    authorId: m.authorId,
+  });
   return row.id;
 }
 

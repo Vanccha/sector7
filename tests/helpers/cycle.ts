@@ -71,8 +71,9 @@ export async function allNotifs(type?: string) {
   return type ? rows.filter((r) => r.type === type) : rows;
 }
 
-export async function muteInApp(userId: string, type: string) {
-  await db.insert(notificationPrefs).values({ userId, type, inApp: false });
+/** Uygulama içini kapatır; `push` verilmezse push açık kalır (notify: satır readAt dolu yazılır). */
+export async function muteInApp(userId: string, type: string, push = true) {
+  await db.insert(notificationPrefs).values({ userId, type, inApp: false, push });
 }
 
 /** Ticket'ı havuza geri koyar (testlerde art arda çekme için). */

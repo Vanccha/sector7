@@ -530,10 +530,31 @@ export const channels = pgTable(
     uniqueIndex("channels_ticket_uq")
       .on(t.ticketId)
       .where(sql`${t.kind} = 'ticket'`),
+    // Tek ortak duyuru kanalı.
+    uniqueIndex("channels_announcement_uq")
+      .on(t.kind)
+      .where(sql`${t.kind} = 'announcement'`),
   ],
 );
 
+/** Kişinin bir kanalı en son okuduğu an (okunmamış sayısı bundan sonraki, başkasının yazdığı mesajlar). */
+export const channelReads = pgTable(
+  "channel_reads",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => channels.id),
+    lastReadAt: ts("last_read_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.channelId] })],
+);
+
 export const messageKind = pgEnum("message_kind", ["text", "system"]);
+
+/** Mesajlar düzenlenmez ve silinmez (geliştirici kararı, Aşama 4); editedAt kullanılmıyor. */
 
 export const messages = pgTable(
   "messages",
@@ -567,9 +588,16 @@ export const notifications = pgTable(
     body: text("body").notNull().default(""),
     link: text("link"),
     readAt: ts("read_at"),
+    /** Push gönderimi için ele alındığı an (gönderilmese de: tercih kapalı, abonelik yok). Boşsa sırada. */
+    pushedAt: ts("pushed_at"),
     createdAt: createdAt(),
   },
-  (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)],
+  (t) => [
+    index("notifications_user_idx").on(t.userId, t.createdAt),
+    index("notifications_push_queue_idx")
+      .on(t.createdAt)
+      .where(sql`${t.pushedAt} is null`),
+  ],
 );
 
 export const notificationPrefs = pgTable(

@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { runAction } from "@/lib/action";
 import { getActor } from "@/lib/auth/session";
 import type { ActionResult } from "@/lib/contracts/errors";
-import { approveRequest, cancelRequest, createRequest, postRequestMessage, rejectRequest } from "@/server/ticket-requests";
+import { approveRequest, cancelRequest, createRequest, rejectRequest } from "@/server/ticket-requests";
 import { evaluateTicket, submitTicket } from "@/server/delivery";
 
 const refresh = () => revalidatePath("/", "layout");
@@ -18,14 +18,6 @@ export async function createRequestAction(input: {
     const r = await createRequest(db, await getActor(), input);
     refresh();
     return r;
-  });
-}
-
-export async function postRequestMessageAction(input: { requestId: string; body: string }): Promise<ActionResult<undefined>> {
-  return runAction(async () => {
-    await postRequestMessage(db, await getActor(), input);
-    refresh();
-    return undefined;
   });
 }
 

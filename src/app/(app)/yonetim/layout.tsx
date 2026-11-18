@@ -8,6 +8,7 @@ const TABS = [
   { href: "/yonetim/sprintler", label: "Sprintler" },
   { href: "/yonetim/talepler", label: "Talepler" },
   { href: "/yonetim/roadmapler", label: "Roadmap onayları" },
+  { href: "/yonetim/duyuru-yetkisi", label: "Duyuru yetkisi" },
 ];
 
 /** Ana yönetici bölümü: alt sekmeler. Yetki her sayfada ve her action'da ayrıca kontrol edilir. */

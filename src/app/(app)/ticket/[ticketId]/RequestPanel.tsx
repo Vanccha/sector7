@@ -2,33 +2,29 @@
 import { useState, useTransition } from "react";
 import { Countdown } from "@/components/tickets/Countdown";
 import { fmtDateTime } from "@/components/tickets/shared";
-import { REQUEST_KIND_LABELS, type RequestRow, type TicketMessage, type TicketPerms } from "@/lib/contracts/tickets";
+import { REQUEST_KIND_LABELS, type RequestRow, type TicketPerms } from "@/lib/contracts/tickets";
 import {
   approveRequestAction,
   cancelRequestAction,
-  postRequestMessageAction,
   rejectRequestAction,
 } from "./actions";
 import styles from "./Ticket.module.css";
 
 const QUICK_HOURS = [12, 24, 48];
 
-/** Bekleyen talep: konuşma, mesaj, geri alma ve (yetkiliyse) karar. */
+/** Bekleyen talep: durum, geri alma ve (yetkiliyse) karar. Konuşma ayrı bölümde (ChannelThread). */
 export function RequestPanel({
   request,
-  messages,
   perms,
   maxGrantedHours,
 }: {
   request: RequestRow;
-  messages: TicketMessage[];
   perms: TicketPerms;
   maxGrantedHours: number;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  const [body, setBody] = useState("");
   const [note, setNote] = useState("");
   const [hours, setHours] = useState("");
   const isExt = request.kind === "extension";
@@ -45,8 +41,6 @@ export function RequestPanel({
       }
     });
   }
-
-  const thread = messages.filter((m) => m.requestId === request.id || m.requestId === null);
 
   return (
     <section className={`cut-panel ${styles.section}`} aria-labelledby="pending-h">
@@ -67,56 +61,6 @@ export function RequestPanel({
           <Countdown countdown={{ dueAt: request.respondBy, pausedAt: null }} size="sm" warnBeforeHours={2} />
         </p>
       )}
-
-      <div className={styles.col}>
-        <h3 style={{ margin: 0, fontSize: 15 }}>Konuşma</h3>
-        {thread.length === 0 ? (
-          <p className={styles.small}>Henüz mesaj yok.</p>
-        ) : (
-          <ul className={styles.msgs} aria-label="Talep konuşması">
-            {thread.map((m) => (
-              <li key={m.id} className={`${styles.msg} ${m.kind === "system" ? styles.msgSystem : ""}`}>
-                <span className={styles.msgHead}>
-                  {m.kind === "system" ? "Sistem" : (m.author?.name ?? "Bilinmiyor")} · {fmtDateTime(m.createdAt)}
-                </span>
-                {m.body}
-              </li>
-            ))}
-          </ul>
-        )}
-        {perms.canMessage ? (
-          <form
-            className={styles.col}
-            onSubmit={(e) => {
-              e.preventDefault();
-              run(() => postRequestMessageAction({ requestId: request.id, body }), () => setBody(""));
-            }}
-          >
-            <div className="field">
-              <label className="label" htmlFor="msg-body">
-                Mesaj yaz
-              </label>
-              <textarea
-                id="msg-body"
-                className="textarea"
-                style={{ minHeight: 72 }}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                maxLength={4000}
-                aria-invalid={fields.body ? true : undefined}
-              />
-              <p className="field-error" hidden={!fields.body}>
-                {fields.body}
-              </p>
-            </div>
-            <div>
-              <button type="submit" className="btn-line" disabled={pending || body.trim() === ""}>
-                Gönder
-              </button>
-            </div>
-          </form>
-        ) : null}
-      </div>
 
       {perms.canCancelRequest ? (
         <div>

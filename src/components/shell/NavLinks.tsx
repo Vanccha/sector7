@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { MessageBadge } from "./CountBadge";
 
-export type NavItem = { href: string; label: string; exact?: boolean };
+export type NavItem = { href: string; label: string; exact?: boolean; badge?: "messages" };
 
 /**
  * Sekme bağlantıları. `keepQuery` verilirse o sorgu parametreleri (ör. "sprint") bağlantılara taşınır.
@@ -37,6 +38,7 @@ export function NavLinks({
             style={{ whiteSpace: "nowrap" }}
           >
             {it.label}
+            {it.badge === "messages" && <MessageBadge />}
           </Link>
         );
       })}

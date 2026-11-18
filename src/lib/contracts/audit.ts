@@ -57,6 +57,13 @@ export const AUDIT_ACTIONS = [
   "sprint.close_begin",
   "sprint.end_decision",
   "sprint.close",
+  // Aşama 4 — iletişim
+  "message.send", // data: { channelId, channelKind, messageId, mentions }
+  "notification.prefs_update",
+  "push.subscribe",
+  "push.unsubscribe",
+  "user.grant_announce",
+  "user.revoke_announce",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number] | (string & {});

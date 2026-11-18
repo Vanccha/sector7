@@ -1,6 +1,6 @@
 # SECTOR7 — AllSpark çalışma sistemi
 
-AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA, Aşama 3 (Ticket döngüsü)**.
+AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA, Aşama 4 (İletişim)**.
 
 - İş kuralları: [`PROMPT.md`](PROMPT.md)
 - Teknik kararlar: [`docs/KARARLAR.md`](docs/KARARLAR.md)
@@ -58,7 +58,17 @@ Tarayıcıda <http://localhost:3000>.
 10. Üyeyle teslim et (açıklama + bağlantı + isteğe bağlı dosya). Alan yöneticisi/ana yönetici **İyi oldu / Kötü oldu** ile değerlendirir.
 11. Ana yönetici **Yönetim → Sprintler → Kapanışı başlat**: bitmemiş ticket'lar `/sprint/<id>/kapanis` ekranında ticket ticket karara bağlanır (taşı, aynı kişide bırak, havuza koy, iptal). Taşıma için önce sonraki sprinti planla. Hepsi karara bağlanınca **Sprinti kapat**.
 
-Zamanlanmış işler (süre uyarısı/dolumu, teklif dolumu, talep hatırlatması ve cevapsız işareti) `npm run dev`/`npm start` içinde dakikada bir çalışır. Elle tetiklemek için `npm run jobs:tick`; kapatmak için `SCHEDULER_DISABLED=1`. Bildirimler şimdilik yalnız veritabanına yazılır (ekranı Aşama 4'te).
+Zamanlanmış işler (süre uyarısı/dolumu, teklif dolumu, talep hatırlatması ve cevapsız işareti) `npm run dev`/`npm start` içinde dakikada bir çalışır. Elle tetiklemek için `npm run jobs:tick`; kapatmak için `SCHEDULER_DISABLED=1`.
+
+**İletişim (Aşama 4)** — iki farklı tarayıcıda (ya da biri gizli pencerede) iki kişiyle:
+
+12. **Mesajlar**: Duyurular, alan kanalları ve ticket konuşmaları. Alan kanalına herkes yazar; mesaj diğer pencerede sayfa yenilenmeden görünür, başlıktaki okunmamış rozeti artar.
+13. `@kullanıcıadı` ile birinden bahset: o kişinin zilinde bildirim belirir. Alan kanalındaki sıradan mesaj bildirim üretmez.
+14. Duyuruya ana yönetici yazar (ya da **Yönetim → Duyuru yetkisi**'nden yetki verilen kişi); herkese bildirim gider.
+15. Ticket sayfasındaki **Konuşma**: ticket'ın kişisi ve alan yöneticisi yazışır; bekleyen ek süre/geri çekme talebi varken mesajlar talebe bağlanır.
+16. **Zil → Tercihler**: tür başına uygulama içi / push aç-kapa.
+
+**Web Push'u lokalde açmak:** `npm run push:keys` çıktısındaki üç satırı `.env`'e ekle, `npm run dev`'i yeniden başlat, **Bildirimler → Tercihler → Bu cihazda push bildirimlerini aç**. `localhost` tarayıcıda güvenli sayılır; Chrome/Edge'de çalışır. Üretimde aynı değişkenler sunucudaki `.env`'e yazılır.
 
 ### Faydalı komutlar
 
@@ -73,6 +83,7 @@ Zamanlanmış işler (süre uyarısı/dolumu, teklif dolumu, talep hatırlatmas�
 | `npm run db:seed` | Başlangıç verisi |
 | `npm run db:studio` | Drizzle Studio (veritabanı gezgini) |
 | `npm run jobs:tick` | Zamanlanmış işleri bir kez çalıştırır |
+| `npm run push:keys` | Web Push için VAPID anahtarı üretir (`.env`'e eklenir) |
 
 ## Testler
 

@@ -47,6 +47,7 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - Bekleyen sayacı için kişisel veri çekmeyen `countPendingApplications` eklendi (her sekme açılışında sahte `personal_data.view` kaydı yazılıyordu).
 - **package-lock.json Linux'ta üretilmeli**: Windows'taki npm, argon2'nin wasm yedeğinin `@emnapi/*` bağımlılıklarını kilit dosyasına yazmıyor ve Docker'da `npm ci` düşüyor. Bağımlılık değişince:
   `docker run --rm -v "${PWD}:/w" -w /w node:24-bookworm-slim npm install --package-lock-only --ignore-scripts`
+  - Aşama 4 notu: host'ta `node_modules` varken bu komut da `@emnapi/*` kayıtlarını düşürebiliyor. Güvenli yol: `package.json` + `package-lock.json`'u `node_modules`'suz geçici bir klasöre kopyala, orada Docker ile lock'u üret ve `npm ci --ignore-scripts` ile doğrula, lock'u geri kopyala. Bağımlılık eklerken host'ta `npm install <paket>` sonrası lock'u bu yolla yeniden üret; `grep -c emnapi package-lock.json` 0 olmamalı.
 
 ### Lokal test kolaylıkları (2026-11-18, geliştirici isteği)
 - Seed ve `admin:create`, `NODE_ENV !== "production"` iken kısa şifreye izin verir (lokal ana yönetici: `admin`). Üretimde 10 karakter alt sınırı geçerli; başvuru/şifre bağlantısı akışında her ortamda geçerli.
@@ -120,3 +121,29 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 
 ### Bildirimler
 - `src/lib/notify.ts` uygulama içi `notifications` satırı yazar, kişinin `notification_prefs.inApp=false` tercihine uyar. Türler `src/lib/contracts/notifications.ts`. Alıcı alan yöneticisi yoksa (ya da talep sahibinin kendisiyse) ana yöneticiler. Push ve gerçek zaman Aşama 4.
+
+## Aşama 4 — İletişim (2026-11-18)
+
+### Geliştiricinin verdiği iş kuralı kararları
+- Alan kanallarını **herkes okur ve yazar** (topluluk zaten alanlar arası çalışıyor). Arşivli alanın kanalı salt okunur.
+- Mesajlar **düzenlenmez ve silinmez**.
+- Bildirim üretenler: **duyurular, ticket konuşması, @bahsetme**. Alan kanalındaki sıradan mesaj yalnız okunmamış sayısını artırır. Kişi her türü uygulama içi ve push için ayrı kapatabilir.
+
+### Erişim
+- Duyuru kanalı: herkes okur; ana yöneticiler ve `canAnnounce` verilenler yazar (yetkiyi ana yönetici verir). Tek duyuru kanalı (kısmi benzersiz indeks).
+- Ticket konuşması: ticket'ı görebilenler (üzerindeki kişi + alan yöneticisi + ana yöneticiler). Görünmeyen kanal "bulunamadı" döner.
+- Ticket kanalında bekleyen talep varken talep sahibinin ya da cevaplayabilenin mesajı talebe bağlanır (Aşama 3'teki talep konuşması kuralları: soru sorulunca cevap süresi durur vb.). Tek konuşma akışı.
+- Kurallar tek yerde: `src/server/channel-access.ts`.
+
+### Okunmamış
+- `channel_reads (user, channel, lastReadAt)`; okunmamış = son okumadan (yoksa hesabın açıldığı andan) sonra başkasının yazdığı mesajlar.
+
+### Gerçek zaman: PostgreSQL LISTEN/NOTIFY + Server-Sent Events
+- Yazma işlemi transaction içinde `pg_notify('sector7_events', json)` çağırır; NOTIFY yalnız commit'te teslim edilir (geri alınan işlem olay üretmez). Yük yalnız kimlik taşır (8000 bayt sınırı); çok alıcılı bildirimde `userIds: "all"`.
+- Uygulama sürecinde tek LISTEN bağlantısı (`src/server/realtime/hub.ts`) olayları dağıtır; `GET /api/olaylar` (SSE) her bağlantıya aktörün görebildiklerini süzerek yollar; istemci içeriği ayrıca çeker. Neden: tek sunucu, ek servis/altyapı yok, SSE tarayıcıda kendiliğinden yeniden bağlanır, Caddy'de `flush_interval -1` hazır. Birden çok uygulama örneğinde de çalışır (her örnek kendi LISTEN'ını açar).
+- İstemci: sayfa başına tek `EventSource` (`src/components/realtime/live.ts`); yeniden bağlanınca `ready` gelir, ekranlar kaçırdıklarını yeniden çeker.
+
+### Bildirim ve Web Push
+- `notify()` satırı yazar ve olay yayınlar. Tercih: uygulama içi ve push kapalıysa satır yok; yalnız push açıksa satır okunmuş doğar; push kapalıysa `pushedAt` dolu doğar.
+- Push kuyruğu `notifications.pushedAt`: uygulama sürecindeki dağıtıcı (`src/server/push.ts`) bildirim olayında ve zamanlayıcı her dakika `FOR UPDATE SKIP LOCKED` ile sahiplenip `web-push` (VAPID) ile gönderir; ağ çağrıları transaction dışında; 1 saatten eski kuyruk gönderilmez; 404/410 dönen abonelik silinir. VAPID anahtarları yoksa push sessizce kapalı (uygulama içi çalışır). Anahtar üretimi: `npm run push:keys`.
+- Service worker yalnız push için (Aşama 6'da PWA kurulumuyla genişler).

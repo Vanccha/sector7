@@ -183,14 +183,30 @@ describe("talep hatırlatması ve cevapsız işareti", () => {
 });
 
 describe("bildirim tercihleri", () => {
-  it("inApp kapalı olan kişiye o tür yazılmaz; diğer türler yazılır", async () => {
+  it("inApp kapalı olan kişiye o tür uygulama içinde gösterilmez (push açıksa satır okunmuş yazılır); diğer türler yazılır", async () => {
     const c = await setupCycle();
     await takenTicket(c, c.areaA.id, c.member);
     await muteInApp(c.member.id, "ticket_due_soon");
     const r = await tick(at(60 * H));
     expect(r.warned).toBe(1);
+    // Push açık: satır push kuyruğu için var ama readAt dolu (rozet artmaz).
+    const muted = await notifsOf(c.member.id, "ticket_due_soon");
+    expect(muted).toHaveLength(1);
+    expect(muted[0]!.readAt).not.toBeNull();
+    expect(muted[0]!.pushedAt).toBeNull();
+    // Dolum bildirimi kapatılmamış: okunmamış gelir.
+    await tick(at(72 * H));
+    const expired = await notifsOf(c.member.id, "ticket_expired");
+    expect(expired).toHaveLength(1);
+    expect(expired[0]!.readAt).toBeNull();
+  });
+
+  it("inApp ve push ikisi de kapalıysa o tür hiç yazılmaz", async () => {
+    const c = await setupCycle();
+    await takenTicket(c, c.areaA.id, c.member);
+    await muteInApp(c.member.id, "ticket_due_soon", false);
+    expect((await tick(at(60 * H))).warned).toBe(1);
     expect(await notifsOf(c.member.id, "ticket_due_soon")).toHaveLength(0);
-    // Dolum bildirimi kapatılmamış: gelir.
     await tick(at(72 * H));
     expect(await notifsOf(c.member.id, "ticket_expired")).toHaveLength(1);
   });
@@ -201,10 +217,14 @@ describe("bildirim tercihleri", () => {
     await createRequest(db, c.member, { ticketId: t.id, kind: "extension", reason: "Daha çok zaman lazım" }, T0);
     await muteInApp(c.mgrA.id, "request_reminder");
     expect((await tick(at(18 * H))).reminded).toBe(1);
-    expect(await notifsOf(c.mgrA.id, "request_reminder")).toHaveLength(0);
-    // request_overdue kapatılmadı.
+    // Uygulama içinde gösterilmez: satır varsa readAt dolu (rozet artmaz).
+    const rem = await notifsOf(c.mgrA.id, "request_reminder");
+    expect(rem.filter((n) => n.readAt === null)).toHaveLength(0);
+    // request_overdue kapatılmadı: okunmamış gelir.
     await tick(at(24 * H));
-    expect(await notifsOf(c.mgrA.id, "request_overdue")).toHaveLength(1);
+    const od = await notifsOf(c.mgrA.id, "request_overdue");
+    expect(od).toHaveLength(1);
+    expect(od[0]!.readAt).toBeNull();
   });
 });
 
