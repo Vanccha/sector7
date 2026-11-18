@@ -35,6 +35,7 @@ export default async function ApplicationsPage({
     username: r.username,
     email: r.email,
     phone: r.phone,
+    githubUsername: r.githubUsername,
     intro: r.intro,
     createdAt: r.createdAt.toISOString(),
     reviewedAt: r.reviewedAt ? r.reviewedAt.toISOString() : null,

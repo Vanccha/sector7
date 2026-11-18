@@ -1,7 +1,9 @@
 "use client";
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { acceptOfferAction, rejectOfferAction } from "@/app/(app)/actions";
+import { GITHUB_REQUIRED_MESSAGE } from "@/lib/contracts/github";
 import type { OfferView, RejectionQuota } from "@/lib/contracts/tickets";
 import { Countdown } from "./Countdown";
 import styles from "./tickets.module.css";
@@ -101,6 +103,12 @@ export function OfferCard({
       {!canReject ? <p className="hint">Bu sprintte red hakkın kalmadı.</p> : null}
       <p role="alert" className="field-error" hidden={!error}>
         {error}
+        {error === GITHUB_REQUIRED_MESSAGE && (
+          <>
+            {" "}
+            <Link href="/profil">GitHub hesabını bağla</Link>
+          </>
+        )}
       </p>
     </article>
   );

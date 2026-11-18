@@ -12,10 +12,30 @@ import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { createGithubAccountHooks } from "./github-link";
 import { hashPassword, verifyPassword } from "./password";
 import { USERNAME_PATTERN } from "@/lib/contracts/applications";
 
 export const SIGN_IN_RATE_LIMIT = { window: 15 * 60, max: 10 } as const;
+
+/**
+ * GitHub hesap bağlama (Aşama 7.5): yalnız GITHUB_CLIENT_ID + GITHUB_CLIENT_SECRET tanımlıysa etkin.
+ * Giriş/kayıt için KULLANILMAZ; yalnız oturumlu kullanıcı POST /link-social ile bağlar (callback: /callback/github).
+ * Scope yalnız read:user (varsayılan user:email kapalı); e-posta kullanılmaz/saklanmaz.
+ */
+const githubSocial =
+  process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+    ? {
+        github: {
+          clientId: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          disableDefaultScope: true,
+          scope: ["read:user"],
+          disableSignUp: true,
+          disableImplicitSignUp: true,
+        },
+      }
+    : undefined;
 
 export const auth = betterAuth({
   appName: "AllSpark",
@@ -44,7 +64,31 @@ export const auth = betterAuth({
     password: { hash: hashPassword, verify: ({ hash, password }) => verifyPassword(hash, password) },
   },
   // E-posta ile girişi ve dışarıdan kaydı tamamen kapat; yalnız kullanıcı adıyla giriş açık.
-  disabledPaths: ["/sign-up/email", "/sign-in/email", "/is-username-available", "/update-user", "/change-email"],
+  // GitHub ile giriş/kayıt kapalı: /sign-in/social kapatıldığı için OAuth callback'ine yalnız /link-social state'i ulaşır.
+  // /unlink-account yerine kendi unlinkGithub'ımız (user alanlarını da temizler); token uç noktaları kapalı (token saklanmaz).
+  disabledPaths: [
+    "/sign-up/email",
+    "/sign-in/email",
+    "/is-username-available",
+    "/update-user",
+    "/change-email",
+    "/sign-in/social",
+    "/unlink-account",
+    "/get-access-token",
+    "/refresh-token",
+    "/account-info",
+  ],
+  ...(githubSocial ? { socialProviders: githubSocial } : {}),
+  account: {
+    accountLinking: {
+      enabled: true,
+      // GitHub e-postası farklı olabilir (e-posta zaten alınmıyor); güvenilir sağlayıcı sayılır ama
+      // e-posta tabanlı örtük bağlama kapalı: yalnız link-social akışı hesap bağlar.
+      allowDifferentEmails: true,
+      trustedProviders: ["github"],
+      disableImplicitLinking: true,
+    },
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 30, // 30 gün
     updateAge: 60 * 60 * 24, // her gün yenilenir
@@ -80,6 +124,7 @@ export const auth = betterAuth({
     nextCookies(),
   ],
   databaseHooks: {
+    account: createGithubAccountHooks(db),
     session: {
       create: {
         // Pasif hesaplar oturum açamaz.

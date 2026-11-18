@@ -11,6 +11,7 @@ import {
   createGoalSchema,
   goalIdSchema,
   reorderStepsSchema,
+  setStepRelationSchema,
   returnRoadmapSchema,
   roadmapIdSchema,
   roadmapRefSchema,
@@ -23,6 +24,7 @@ import {
   type RoadmapStatus,
   type StepRow,
 } from "@/lib/contracts/plan";
+import { loadStepTickets } from "./dependencies";
 import {
   assertSprintOpen,
   getSprintOrThrow,
@@ -52,6 +54,7 @@ async function loadSteps(db: DbOrTx, roadmapIds: string[]): Promise<Map<string, 
       title: roadmapSteps.title,
       description: roadmapSteps.description,
       goalId: roadmapSteps.goalId,
+      afterPrevious: roadmapSteps.afterPrevious,
       ticketCount: count(tickets.id),
     })
     .from(roadmapSteps)
@@ -59,6 +62,10 @@ async function loadSteps(db: DbOrTx, roadmapIds: string[]): Promise<Map<string, 
     .where(inArray(roadmapSteps.roadmapId, roadmapIds))
     .groupBy(roadmapSteps.id)
     .orderBy(asc(roadmapSteps.position));
+  const stepTickets = await loadStepTickets(
+    db,
+    rows.map((r) => r.id),
+  );
   for (const r of rows) {
     const list = map.get(r.roadmapId) ?? [];
     list.push({
@@ -68,6 +75,8 @@ async function loadSteps(db: DbOrTx, roadmapIds: string[]): Promise<Map<string, 
       description: r.description,
       goalId: r.goalId,
       ticketCount: Number(r.ticketCount),
+      afterPrevious: r.afterPrevious,
+      ticket: stepTickets.get(r.id) ?? null,
     });
     map.set(r.roadmapId, list);
   }
@@ -302,6 +311,36 @@ export async function updateStep(db: DB, actor: Actor | null, raw: unknown): Pro
       entityId: input.stepId,
       areaId: ctx.areaId,
       data: { roadmapId: rm.id, title: input.title },
+    });
+    await resubmitIfApproved(tx, rm, ctx.actor.id);
+  });
+}
+
+export async function setStepRelation(db: DB, actor: Actor | null, raw: unknown): Promise<void> {
+  const input = setStepRelationSchema.parse(raw);
+  const ctx = await loadStepContext(db, actor, input.stepId);
+  await db.transaction(async (tx) => {
+    assertSprintOpen(await getSprintOrThrow(tx, ctx.sprintId));
+    const rm = await lockRoadmap(tx, ctx.roadmapId);
+    const [cur] = await tx
+      .select({ afterPrevious: roadmapSteps.afterPrevious })
+      .from(roadmapSteps)
+      .where(eq(roadmapSteps.id, input.stepId))
+      .limit(1);
+    if (!cur) throw notFound("Basamak bulunamadı.");
+    if (cur.afterPrevious === input.afterPrevious) return;
+    // Yalnız basamak değişir; mevcut ticket'ların bağımlılıklarına dokunulmaz.
+    await tx
+      .update(roadmapSteps)
+      .set({ afterPrevious: input.afterPrevious })
+      .where(eq(roadmapSteps.id, input.stepId));
+    await audit(tx, {
+      actorId: ctx.actor.id,
+      action: "roadmap.step_relation",
+      entityType: "roadmap_step",
+      entityId: input.stepId,
+      areaId: ctx.areaId,
+      data: { roadmapId: rm.id, from: cur.afterPrevious, to: input.afterPrevious },
     });
     await resubmitIfApproved(tx, rm, ctx.actor.id);
   });

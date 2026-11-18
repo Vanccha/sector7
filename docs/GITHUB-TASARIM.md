@@ -1,6 +1,6 @@
 # GitHub entegrasyonu — tasarım önerisi (Aşama 7.5, taslak)
 
-Durum: **kısmen onaylı** (kimlik, depo düzeni). Teslim/senkron ve App türü cevap bekliyor. Bu belge onaylanmadan 7.5 için kod yazılmaz.
+Durum: **kısmen onaylı** (kimlik, depo düzeni). Adım 1 (hesap bağlama) uygulandı. Teslim/senkron ve App türü cevap bekliyor. Adım 2+ için onaya kadar kod yazılmaz.
 
 ## Amaç
 

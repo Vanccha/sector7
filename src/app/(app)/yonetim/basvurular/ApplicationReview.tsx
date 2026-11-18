@@ -9,6 +9,7 @@ export type ReviewItem = {
   username: string;
   email: string;
   phone: string;
+  githubUsername?: string | null;
   intro: string;
   createdAt: string;
   reviewedAt: string | null;
@@ -133,6 +134,18 @@ function Card({
             <a href={`tel:${item.phone}`}>{item.phone}</a>
           </dd>
         </div>
+        {item.githubUsername && (
+          <div>
+            <dt className="sr-only">GitHub</dt>
+            <dd style={{ margin: 0 }}>
+              GitHub:{" "}
+              <a href={`https://github.com/${encodeURIComponent(item.githubUsername)}`} target="_blank" rel="noopener noreferrer">
+                @{item.githubUsername}
+              </a>{" "}
+              <span className="muted">(doğrulanmamış)</span>
+            </dd>
+          </div>
+        )}
       </dl>
       <p className={styles.intro}>{item.intro}</p>
       <p className="muted">Başvuru: {date(item.createdAt)}</p>

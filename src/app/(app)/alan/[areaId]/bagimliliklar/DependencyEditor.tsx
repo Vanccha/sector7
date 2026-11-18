@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Background,
   Controls,
@@ -16,6 +16,8 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { TicketStateChip } from "@/components/plan/TicketStateChip";
+import { useLiveRefresh } from "@/components/plan/useLiveRefresh";
 import { isTicketEditable, TICKET_STATUS_LABELS, type TicketStatus } from "@/lib/contracts/plan";
 import { addDependencyAction, removeDependencyAction, setTicketPositionAction } from "./actions";
 import type { DependencyProps } from "./DependencyWorkspace";
@@ -27,6 +29,8 @@ type TicketNodeData = {
   areaName: string | null; // yalnız dış düğümlerde
   takeable: boolean;
   blocked: boolean;
+  blockedCount: number;
+  dependentCount: number;
   external: boolean;
 };
 type TicketNode = Node<TicketNodeData, "ticket">;
@@ -35,13 +39,6 @@ const COL_W = 300;
 const ROW_H = 120;
 
 function TicketNodeView({ data }: NodeProps<TicketNode>) {
-  const state = data.external
-    ? "Başka alan"
-    : data.takeable
-      ? "Alınabilir"
-      : data.blocked
-        ? "Kilitli"
-        : TICKET_STATUS_LABELS[data.status];
   return (
     <div className={styles.node}>
       {!data.external && <Handle type="target" position={Position.Left} />}
@@ -54,8 +51,14 @@ function TicketNodeView({ data }: NodeProps<TicketNode>) {
         {data.areaName && <span className={styles.nodeArea}>{data.areaName}</span>}
         <span className={styles.nodeTitle}>{data.title}</span>
         <span className={styles.nodeMeta}>
-          {TICKET_STATUS_LABELS[data.status]}
-          {state !== TICKET_STATUS_LABELS[data.status] ? ` · ${state}` : ""}
+          {data.external ? (
+            <span className={styles.nodeState}>{TICKET_STATUS_LABELS[data.status]} · başka alan</span>
+          ) : (
+            <TicketStateChip status={data.status} takeable={data.takeable} blockedCount={data.blockedCount} short />
+          )}
+          {data.dependentCount > 0 && (
+            <span className={styles.nodeState}>Bitince açılacak: {data.dependentCount}</span>
+          )}
         </span>
       </div>
       <Handle type="source" position={Position.Right} />
@@ -124,6 +127,8 @@ function buildNodes(props: DependencyProps, edges: Edge[], prev: Map<string, { x
       areaName: null,
       takeable: t.takeable,
       blocked: t.blockedBy.length > 0,
+      blockedCount: t.blockedBy.length,
+      dependentCount: t.dependents.length,
       external: false,
     },
   }));
@@ -135,10 +140,23 @@ function buildNodes(props: DependencyProps, edges: Edge[], prev: Map<string, { x
       draggable: false,
       connectable: true,
       deletable: false,
-      data: { title: e.title, status: e.status, areaName: e.areaName, takeable: false, blocked: false, external: true },
+      data: {
+        title: e.title,
+        status: e.status,
+        areaName: e.areaName,
+        takeable: false,
+        blocked: false,
+        blockedCount: 0,
+        dependentCount: 0,
+        external: true,
+      },
     });
   }
   return nodes;
+}
+
+function externalTitle(p: DependencyProps, id: string) {
+  return p.externalPrerequisites.find((e) => e.id === id)?.title ?? "";
 }
 
 export function DependencyEditor(props: DependencyProps) {
@@ -152,6 +170,10 @@ export function DependencyEditor(props: DependencyProps) {
   const [synced, setSynced] = useState(props);
   const [error, setError] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  const [hoveredEdge, setHoveredEdge] = useState<string | null>(null);
+  const busy = useRef(false);
+  // Sürükleme/bağlama sürerken yenileme düğüm konumlarını bozmasın.
+  useLiveRefresh(() => busy.current);
 
   // Sunucudan yeni veri gelince düğüm konumlarını koruyarak yeniden kur.
   if (synced.tickets !== tickets || synced.externalPrerequisites !== props.externalPrerequisites) {
@@ -190,6 +212,23 @@ export function DependencyEditor(props: DependencyProps) {
     [edges, setEdges],
   );
 
+  const shownEdges = useMemo(
+    () =>
+      edges.map((e) =>
+        e.id === selectedEdge || e.id === hoveredEdge
+          ? {
+              ...e,
+              label: "sıralı",
+              labelStyle: { fill: "var(--tx)", fontSize: 12 },
+              labelBgStyle: { fill: "var(--panel2)" },
+              labelBgPadding: [6, 3] as [number, number],
+            }
+          : e,
+      ),
+    [edges, selectedEdge, hoveredEdge],
+  );
+  const selected = edges.find((e) => e.id === selectedEdge) ?? null;
+
   const removeEdges = useCallback(
     (removed: Edge[]) => {
       setError(null);
@@ -208,7 +247,10 @@ export function DependencyEditor(props: DependencyProps) {
 
   return (
     <>
-      <p className={styles.help}>Bir ticket&apos;ın sağındaki noktadan, onu bekleyecek ticket&apos;ın soluna sürükle.</p>
+      <p className={styles.help}>
+        Bir ticket&apos;ın sağındaki noktadan, onu bekleyecek ticket&apos;ın soluna sürükle: sıralı bağlantı kurulur. Okun
+        üstüne tıklayınca bağlantıyı paralele çevirebilirsin.
+      </p>
       <div className={styles.flowWrap}>
         {error && (
           <p className={`notice notice--hot ${styles.error}`} role="alert">
@@ -217,7 +259,7 @@ export function DependencyEditor(props: DependencyProps) {
         )}
         <ReactFlow<TicketNode, Edge>
           nodes={nodes}
-          edges={edges}
+          edges={shownEdges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
@@ -225,8 +267,20 @@ export function DependencyEditor(props: DependencyProps) {
           isValidConnection={isValidConnection}
           onEdgesDelete={removeEdges}
           onEdgeClick={(_, e) => setSelectedEdge(e.id)}
+          onEdgeMouseEnter={(_, e) => setHoveredEdge(e.id)}
+          onEdgeMouseLeave={() => setHoveredEdge(null)}
+          onNodeDragStart={() => {
+            busy.current = true;
+          }}
+          onConnectStart={() => {
+            busy.current = true;
+          }}
+          onConnectEnd={() => {
+            busy.current = false;
+          }}
           onPaneClick={() => setSelectedEdge(null)}
           onNodeDragStop={(_, n) => {
+            busy.current = false;
             if (!canEdit || n.data.external) return;
             void setTicketPositionAction({ ticketId: n.id, x: n.position.x, y: n.position.y });
           }}
@@ -243,19 +297,36 @@ export function DependencyEditor(props: DependencyProps) {
           <Controls showInteractive={false} />
           <MiniMap pannable zoomable />
         </ReactFlow>
-        {canEdit && selectedEdge && edges.some((e) => e.id === selectedEdge) && (
-          <div className={styles.edgeBar}>
-            <button
-              type="button"
-              className="btn-line btn-danger"
-              onClick={() => {
-                const e = edges.find((x) => x.id === selectedEdge);
-                if (!e) return;
-                setEdges((es) => es.filter((x) => x.id !== e.id));
-                removeEdges([e]);
-              }}
-            >
-              Bağlantıyı kaldır
+        {selected && (
+          <div className={styles.edgeBar} role="group" aria-label="Bağlantı ilişkisi">
+            <p className={styles.edgeTitle}>
+              {byId.get(selected.source)?.title ?? externalTitle(props, selected.source)} →{" "}
+              {byId.get(selected.target)?.title ?? ""}
+            </p>
+            <div className={styles.seg}>
+              <button type="button" className={styles.segBtn} aria-pressed="true" disabled>
+                Sıralı (önce bu bitmeli)
+              </button>
+              <button
+                type="button"
+                className={styles.segBtn}
+                aria-pressed="false"
+                disabled={!canEdit || !canTarget(selected.target)}
+                onClick={() => {
+                  setEdges((es) => es.filter((x) => x.id !== selected.id));
+                  removeEdges([selected]);
+                }}
+              >
+                Paralel yap
+              </button>
+            </div>
+            <p className={styles.edgeNote}>
+              {canEdit && canTarget(selected.target)
+                ? "Paralel yapınca bağlantı kalkar; bekleyen ticket ön koşuldan bağımsız alınabilir."
+                : "Bu ticket'ın bağlantısı artık değiştirilemez."}
+            </p>
+            <button type="button" className="btn-ghost" onClick={() => setSelectedEdge(null)}>
+              Kapat
             </button>
           </div>
         )}

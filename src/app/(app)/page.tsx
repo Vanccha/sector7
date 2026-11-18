@@ -28,6 +28,19 @@ export default async function HomePage() {
         </p>
       </section>
       <SparkRequest initial={view} />
+      <section className="cut-panel" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <h2 className="panel-h">Şema</h2>
+        <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+          Şu an kimin hangi alanda çalıştığını canlı gör.
+        </p>
+        <Link
+          href="/sema"
+          className="btn-line"
+          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", minHeight: "var(--tap)" }}
+        >
+          Şemayı aç
+        </Link>
+      </section>
       </div>
       <section className="skeleton-stack page-split__main" aria-labelledby="active-h">
         <h2 className="panel-h" id="active-h">

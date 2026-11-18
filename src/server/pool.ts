@@ -18,6 +18,7 @@ import {
 import { getSettings } from "@/lib/settings";
 import { addHours, isOfferExpired, offerExpiresAt } from "@/lib/ticket-time";
 import { takeableCondition } from "./dependencies";
+import { assertGithubLinkedForTickets } from "./github-link";
 import {
   areaNames,
   getActiveSprint,
@@ -79,6 +80,10 @@ export async function requestTicket(db: DB, actor: Actor | null, now: Date = new
       });
     }
 
+    // Red hakkı bittiyse ticket doğrudan atanacak: bağlı GitHub hesabı yoksa ticket çekmeden reddet.
+    const quota = await quotaOf();
+    if (quota.remaining <= 0) await assertGithubLinkedForTickets(tx, a.id);
+
     // Aday seçimi.
     const rejectedRows = await tx
       .select({ ticketId: ticketRejections.ticketId })
@@ -104,7 +109,6 @@ export async function requestTicket(db: DB, actor: Actor | null, now: Date = new
       .for("update", { of: tickets, skipLocked: true });
 
     if (!candidate) {
-      const rejections = await quotaOf();
       await audit(tx, {
         actorId: a.id,
         action: "ticket.request_draw",
@@ -112,10 +116,9 @@ export async function requestTicket(db: DB, actor: Actor | null, now: Date = new
         entityId: sprint.id,
         data: { kind: "empty" },
       });
-      return { kind: "empty", rejections };
+      return { kind: "empty", rejections: quota };
     }
 
-    const quota = await quotaOf();
     const t = candidate.ticket;
     if (quota.remaining > 0) {
       const [row] = await tx
@@ -175,6 +178,7 @@ export async function acceptOffer(db: DB, actor: Actor | null, raw: { ticketId: 
     if (!t.offeredAt || isOfferExpired(t.offeredAt, now)) {
       throw invalidState("Teklifin süresi doldu; yeni ticket isteyebilirsin.");
     }
+    await assertGithubLinkedForTickets(tx, a.id);
     const settings = await getSettings(tx);
     await tx
       .update(tickets)

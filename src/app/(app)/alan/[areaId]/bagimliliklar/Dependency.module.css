@@ -76,8 +76,19 @@
   overflow-wrap: anywhere;
 }
 .nodeMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   font-size: 12px;
   color: var(--mut);
+}
+.nodeState {
+  font-size: 12px;
+  color: var(--mut);
+}
+.banner {
+  margin: 0;
 }
 .edgeBar {
   position: absolute;
@@ -85,9 +96,11 @@
   bottom: 12px;
   z-index: 5;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
-  padding: 8px 12px;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 10px 12px;
   background: var(--panel2);
   border: 1px solid var(--line2);
 }
@@ -188,4 +201,62 @@
 }
 .results button:hover {
   background: var(--sel);
+}
+
+.edgeTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.edgeNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mut);
+}
+.seg {
+  display: flex;
+  border: 1px solid var(--btn-line);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+.segBtn {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 12px;
+  background: none;
+  border: 0;
+  color: var(--tx);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.segBtn + .segBtn {
+  border-left: 1px solid var(--btn-line);
+}
+.segBtn[aria-pressed="true"] {
+  background: var(--ac);
+  color: var(--on-ac);
+  font-weight: 600;
+}
+.segBtn:disabled:not([aria-pressed="true"]) {
+  color: var(--mut);
+  cursor: not-allowed;
+}
+.waitList {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--mut);
+}
+.prChip .seqTag {
+  color: var(--mut);
+  font-size: 12px;
+}
+.prChip .parBtn {
+  min-width: 44px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--ac-tx);
+  border-left: 1px solid var(--line2);
+  margin-left: 4px;
 }

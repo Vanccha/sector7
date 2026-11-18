@@ -12,7 +12,7 @@ type Listener = (e: ClientEvent) => void;
 const listeners = new Set<Listener>();
 let source: EventSource | null = null;
 
-const KINDS: ClientEvent["kind"][] = ["message", "notification", "ready"];
+const KINDS: ClientEvent["kind"][] = ["message", "notification", "tickets", "ready"];
 
 function open() {
   if (source || typeof window === "undefined" || typeof EventSource === "undefined") return;

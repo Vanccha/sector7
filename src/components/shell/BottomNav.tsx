@@ -160,6 +160,12 @@ export function BottomNav({ name, roles, showAreas, isMainAdmin }: Props) {
                 Kapat
               </button>
             </div>
+            <Link href="/profil" className="menu-sheet__link" aria-current={path.startsWith("/profil") ? "page" : undefined}>
+              Profil
+            </Link>
+            <Link href="/sema" className="menu-sheet__link" aria-current={path.startsWith("/sema") ? "page" : undefined}>
+              Şema
+            </Link>
             {showAreas && (
               <Link href="/alan" className="menu-sheet__link" aria-current={path.startsWith("/alan") ? "page" : undefined}>
                 Alanlarım

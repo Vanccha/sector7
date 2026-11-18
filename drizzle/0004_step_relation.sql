@@ -1,0 +1,1 @@
+ALTER TABLE "roadmap_steps" ADD COLUMN "after_previous" boolean DEFAULT false NOT NULL;

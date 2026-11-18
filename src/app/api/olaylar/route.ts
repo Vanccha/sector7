@@ -11,6 +11,7 @@ function toClient(actor: Actor, e: ServerEvent): ClientEvent | null {
   if (e.kind === "notification") {
     return e.userIds === "all" || e.userIds.includes(actor.id) ? { kind: "notification" } : null;
   }
+  if (e.kind === "tickets") return { kind: "tickets", areaId: e.areaId };
   if (e.channelKind === "ticket") {
     if (!e.areaId || !canViewTicket(actor, { areaId: e.areaId, assigneeId: e.ticketAssigneeId })) return null;
   }

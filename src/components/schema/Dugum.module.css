@@ -1,0 +1,88 @@
+.dugum {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  transition: opacity 0.25s;
+}
+.dim {
+  opacity: 0.28;
+}
+.wrap {
+  position: relative;
+  display: block;
+  flex: none;
+}
+.edge,
+.body {
+  position: absolute;
+  clip-path: var(--poly);
+}
+.edge {
+  inset: 0;
+  background: var(--edge);
+  transition: background 0.25s;
+}
+.body {
+  inset: 4px 5px;
+  background: var(--tri);
+  overflow: hidden;
+}
+.active .edge {
+  background: var(--ac2);
+}
+.dugum:hover .edge,
+.selected .edge {
+  background: var(--ac-hi);
+}
+.initials {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-stretch: 125%;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ac-tx);
+  font-size: 15px;
+}
+[data-size="person"] .initials {
+  font-size: 13px;
+}
+.low {
+  align-items: flex-end;
+  padding-bottom: 8px;
+}
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  text-align: center;
+  max-width: 100%;
+}
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-size="person"] .name {
+  font-size: 13px;
+}
+.role {
+  font-size: 13px;
+  color: var(--mut);
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dugum,
+  .edge {
+    transition: none;
+  }
+}

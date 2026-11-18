@@ -1,0 +1,22 @@
+.stateChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--mut);
+  border: 1px solid var(--btn-line);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.stateChip[data-tone="take"] {
+  background: var(--ac);
+  border-color: var(--ac);
+  color: var(--on-ac);
+}
+.stateChip[data-tone="wait"] {
+  color: var(--ac-tx);
+  border-color: var(--ac-tx);
+  border-style: dashed;
+}

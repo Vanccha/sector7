@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
 import styles from "../public.module.css";
+import { githubUsernameSchema } from "@/lib/contracts/github";
 import { submitApplicationAction } from "./actions";
 
 export function ApplicationForm() {
@@ -16,6 +17,12 @@ export function ApplicationForm() {
     const get = (k: string) => String(fd.get(k) ?? "");
     setError(null);
     setFields({});
+    const gh = githubUsernameSchema.safeParse(get("githubUsername"));
+    if (!gh.success) {
+      setFields({ githubUsername: gh.error.issues[0]?.message ?? "Geçerli bir GitHub kullanıcı adı yaz." });
+      setError("Bazı alanları gözden geçirir misin?");
+      return;
+    }
     startTransition(async () => {
       const res = await submitApplicationAction({
         fullName: get("fullName"),
@@ -23,6 +30,7 @@ export function ApplicationForm() {
         email: get("email"),
         phone: get("phone"),
         intro: get("intro"),
+        githubUsername: get("githubUsername"),
       });
       if (res.ok) {
         setDone(true);
@@ -124,6 +132,24 @@ export function ApplicationForm() {
             En az 20 karakter.
           </p>
           {err("intro")}
+        </div>
+        <div className="field">
+          <label className="label" htmlFor="githubUsername">
+            GitHub kullanıcı adı (isteğe bağlı)
+          </label>
+          <input
+            {...attrs("githubUsername", true)}
+            className="input"
+            type="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="@kullanici"
+          />
+          <p id="githubUsername-hint" className="hint">
+            Varsa yaz; ticket almadan önce hesabını bağlaman istenecek.
+          </p>
+          {err("githubUsername")}
         </div>
         <div aria-live="polite">
           {error && (

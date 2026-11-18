@@ -136,6 +136,11 @@ export const updateStepSchema = z.object({
   goalId: id.nullable().default(null),
 });
 export const stepIdSchema = z.object({ stepId: id });
+/**
+ * Aşama 7.4: basamağın önceki basamakla ilişkisi (paralel / sıralı). Basamak değişikliği sayılır:
+ * onaylı roadmap yeniden onaya düşer. İlk basamakta anlamsızdır (yok sayılır, ama saklanır).
+ */
+export const setStepRelationSchema = z.object({ stepId: id, afterPrevious: z.boolean() });
 /** Roadmap'in tüm basamak kimlikleri, yeni sırayla. */
 export const reorderStepsSchema = z.object({ roadmapId: id, stepIds: z.array(id).min(1) });
 export const roadmapRefSchema = z.object({ areaId: id, sprintId: id });
@@ -205,6 +210,10 @@ export type StepRow = {
   description: string;
   goalId: string | null;
   ticketCount: number;
+  /** Aşama 7.4: true = önceki basamaktan sonra (sıralı), false = paralel. */
+  afterPrevious: boolean;
+  /** Bu basamaktan oluşmuş, iptal edilmemiş ilk ticket'ın durumu (yoksa null) — roadmap'te görünürlük için. */
+  ticket: { id: string; status: TicketStatus; takeable: boolean; blockedCount: number } | null;
 };
 
 export type RoadmapView = {
@@ -257,6 +266,8 @@ export type TicketRow = {
   blockedBy: TicketRef[];
   /** Havuzda ve tüm ön koşulları bitmiş. */
   takeable: boolean;
+  /** Aşama 7.4: bu ticket'ı bekleyenler (bu bitince açılacaklar). */
+  dependents: TicketRef[];
 };
 
 /** Bağımlılık düzenleyicisinde gösterilen, alan dışından gelen ön koşul düğümleri. */

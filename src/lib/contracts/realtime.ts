@@ -23,7 +23,13 @@ export type ServerEvent =
       authorId: string | null;
     }
   /** Alıcı çoksa (yük sınırı) "all": her bağlı istemci sayacını yeniler. */
-  | { kind: "notification"; userIds: string[] | "all" };
+  | { kind: "notification"; userIds: string[] | "all" }
+  /**
+   * Bir ticket'ın durumu ya da kişisi değişti (Aşama 7). Uygulama kodu yayınlamaz: `tickets` tablosundaki
+   * `tickets_notify_change` tetikleyicisi (göç 0003) üretir; böylece her yazma yolu kapsanır. Aynı transaction'daki
+   * özdeş yükleri PostgreSQL tekilleştirir. Herkese gider (kişisel veri yok); ekranlar içeriği yeniden çeker.
+   */
+  | { kind: "tickets"; areaId: string };
 
 /** Bu sayıdan fazla alıcıda userIds yerine "all" gönderilir. */
 export const NOTIFY_FANOUT_LIMIT = 100;
@@ -32,4 +38,5 @@ export const NOTIFY_FANOUT_LIMIT = 100;
 export type ClientEvent =
   | { kind: "message"; channelId: string; messageId: string; authorId: string | null }
   | { kind: "notification" }
+  | { kind: "tickets"; areaId: string }
   | { kind: "ready" };

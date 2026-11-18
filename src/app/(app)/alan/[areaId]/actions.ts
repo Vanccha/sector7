@@ -10,6 +10,7 @@ import {
   deleteGoal,
   deleteStep,
   reorderSteps,
+  setStepRelation,
   submitRoadmap,
   updateGoal,
   updateStep,
@@ -59,6 +60,12 @@ export async function deleteStepAction(input: unknown): Promise<ActionResult<und
 export async function reorderStepsAction(input: unknown): Promise<ActionResult<undefined>> {
   return run(async (a) => {
     await reorderSteps(db, a, input);
+    return undefined;
+  });
+}
+export async function setStepRelationAction(input: unknown): Promise<ActionResult<undefined>> {
+  return run(async (a) => {
+    await setStepRelation(db, a, input);
     return undefined;
   });
 }

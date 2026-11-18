@@ -1,5 +1,5 @@
 /** Ticket'lar: basamaklardan oluşturma, düzenleme, iptal, yayınlama, listeleme. */
-import { and, asc, count, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, count, eq, inArray, ne, sql } from "drizzle-orm";
 import type { DB, DbOrTx } from "@/db";
 import { roadmaps, roadmapSteps, tickets } from "@/db/schema";
 import { audit } from "@/lib/audit";
@@ -21,7 +21,7 @@ import {
   type TicketRef,
   type TicketRow,
 } from "@/lib/contracts/plan";
-import { loadPrerequisites } from "./dependencies";
+import { insertDependencyTx, loadDependents, loadPrerequisites, loadStepTickets } from "./dependencies";
 import { assertSprintOpen, getSprintOrThrow, requireAreaEditor, requireAreaViewer, resolveSprint } from "./plan-common";
 
 /** Basamaklar; ticketCount iptal olmayan ticket'ları sayar (iptal edilen basamak yeniden oluşturulabilir). */
@@ -46,6 +46,10 @@ async function stepsWithCounts(db: DbOrTx, roadmapId: string): Promise<StepRow[]
     )
     .groupBy(tickets.roadmapStepId);
   const byStep = new Map(counts.map((c) => [c.stepId, Number(c.n)]));
+  const stepTickets = await loadStepTickets(
+    db,
+    steps.map((s) => s.id),
+  );
   return steps.map((s) => ({
     id: s.id,
     position: s.position,
@@ -53,6 +57,8 @@ async function stepsWithCounts(db: DbOrTx, roadmapId: string): Promise<StepRow[]
     description: s.description,
     goalId: s.goalId,
     ticketCount: byStep.get(s.id) ?? 0,
+    afterPrevious: s.afterPrevious,
+    ticket: stepTickets.get(s.id) ?? null,
   }));
 }
 
@@ -69,6 +75,10 @@ export async function listAreaTickets(
     .where(and(eq(tickets.areaId, area.id), eq(tickets.sprintId, sprint.id)))
     .orderBy(asc(tickets.createdAt), asc(tickets.title));
   const prereqs = await loadPrerequisites(
+    db,
+    rows.map((r) => r.id),
+  );
+  const dependents = await loadDependents(
     db,
     rows.map((r) => r.id),
   );
@@ -90,6 +100,7 @@ export async function listAreaTickets(
       prerequisites,
       blockedBy,
       takeable: isInPool(r.status) && blockedBy.length === 0,
+      dependents: dependents.get(r.id) ?? [],
     };
   });
   out.sort((x, y) => Number(x.status === "cancelled") - Number(y.status === "cancelled"));
@@ -161,8 +172,14 @@ export async function createTicketsFromSteps(
   return db.transaction(async (tx) => {
     const { roadmap, actor: a } = await approvedRoadmapForEdit(tx, actor, input.roadmapId);
     const steps = await stepsWithCounts(tx, roadmap.id);
-    const missing = steps.filter((s) => s.ticketCount === 0);
-    for (const s of missing) {
+    // Sıralı ilişki bağlantıları ve çift yazımı serileştirmek için kilit.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('ticket_dependencies'))`);
+    // Basamak başına iptal edilmemiş ticket (var olan ya da bu çağrıda oluşan).
+    const ticketOf = new Map<string, string>();
+    for (const s of steps) if (s.ticket) ticketOf.set(s.id, s.ticket.id);
+    let created = 0;
+    for (const [i, s] of steps.entries()) {
+      if (s.ticketCount > 0) continue;
       const [row] = await tx
         .insert(tickets)
         .values({
@@ -176,6 +193,8 @@ export async function createTicketsFromSteps(
         })
         .returning({ id: tickets.id });
       if (!row) throw new Error("Ticket kaydedilemedi.");
+      ticketOf.set(s.id, row.id);
+      created++;
       await audit(tx, {
         actorId: a.id,
         action: "ticket.create",
@@ -185,8 +204,12 @@ export async function createTicketsFromSteps(
         ticketId: row.id,
         data: { roadmapStepId: s.id, bulk: true },
       });
+      const prevId = s.afterPrevious && i > 0 ? ticketOf.get(steps[i - 1]?.id ?? "") : undefined;
+      if (prevId) {
+        await insertDependencyTx(tx, a.id, { id: row.id, areaId: roadmap.areaId }, prevId, { auto: true });
+      }
     }
-    return { created: missing.length };
+    return { created };
   });
 }
 

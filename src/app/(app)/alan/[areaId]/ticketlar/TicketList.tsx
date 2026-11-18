@@ -1,5 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
+import { TicketStateChip } from "@/components/plan/TicketStateChip";
+import { useLiveRefresh } from "@/components/plan/useLiveRefresh";
 import { TICKET_STATUS_LABELS, type AreaTicketsView, type StepRow, type TicketRow } from "@/lib/contracts/plan";
 import {
   cancelTicketAction,
@@ -20,6 +22,7 @@ export function TicketList({
   approved: boolean;
 }) {
   const { tickets, steps, canEdit } = view;
+  useLiveRefresh();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +133,11 @@ export function TicketList({
             </>
           )}
         </div>
+        {canEdit && drafts.length > 0 && (
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+            Ön koşulu bekleyenler havuza girer ama ön koşul teslim edilene kadar kimseye düşmez.
+          </p>
+        )}
         <Group
           items={drafts}
           empty="Taslak ticket yok."
@@ -347,13 +355,23 @@ function TicketCard({
           <div className="chip-row">
             <span>{TICKET_STATUS_LABELS[t.status]}</span>
             {showTakeable && t.takeable && <span className={`${styles.badge} ${styles.badgeOk}`}>Alınabilir</span>}
+            {showTakeable && !t.takeable && t.blockedBy.length > 0 && (
+              <TicketStateChip
+                status={t.status}
+                takeable={false}
+                blockedCount={t.blockedBy.length}
+                hint={`Bekleniyor: ${t.blockedBy.map((b) => `${b.title} · ${b.areaName}`).join(", ")}`}
+              />
+            )}
           </div>
         </div>
       </div>
       {t.description && !editing && <p className={styles.desc}>{t.description}</p>}
       {showTakeable && t.blockedBy.length > 0 && (
         <div>
-          <span className={styles.badge}>Bekliyor</span>
+          <span className="muted" style={{ fontSize: 13 }}>
+            Şunların teslimini bekliyor:
+          </span>
           <ul className={styles.waits}>
             {t.blockedBy.map((b) => (
               <li key={b.id}>

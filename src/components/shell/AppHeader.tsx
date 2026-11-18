@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import type { Actor } from "@/lib/contracts/actor";
 import { rolesOf, ROLE_LABELS } from "@/lib/contracts/actor";
@@ -13,6 +14,7 @@ import { SprintStatus } from "./SprintStatus";
 export function navFor(actor: Actor): NavItem[] {
   const items: NavItem[] = [
     { href: "/", label: "Ana sayfa" },
+    { href: "/sema", label: "Şema" },
     { href: "/ticketlarim", label: "Ticket'larım" },
     { href: "/mesajlar", label: "Mesajlar", badge: "messages" },
   ];
@@ -34,10 +36,15 @@ export function AppHeader({ actor, sprint }: { actor: Actor; sprint: SprintView 
           <div className="app-header__user">
             <InstallButton variant="header" />
             <BellLink />
-            <span className="app-header__who">
+            <Link
+              href="/profil"
+              className="app-header__who"
+              style={{ color: "inherit", textDecoration: "none", minHeight: 44, justifyContent: "center" }}
+              aria-label={`Profil: ${actor.name}`}
+            >
               <span style={{ fontWeight: 600 }}>{actor.name}</span>
               <small>{roles}</small>
-            </span>
+            </Link>
             <SignOutButton />
           </div>
         </div>

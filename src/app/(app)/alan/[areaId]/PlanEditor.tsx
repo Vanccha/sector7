@@ -1,6 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { TicketStateChip } from "@/components/plan/TicketStateChip";
+import { useStepReorder } from "@/components/plan/useStepReorder";
+import { useLiveRefresh } from "@/components/plan/useLiveRefresh";
 import type { ActionResult } from "@/lib/contracts/errors";
 import { ROADMAP_STATUS_LABELS, type AreaPlan, type GoalRow, type StepRow } from "@/lib/contracts/plan";
 import {
@@ -9,6 +12,7 @@ import {
   deleteGoalAction,
   deleteStepAction,
   reorderStepsAction,
+  setStepRelationAction,
   submitRoadmapAction,
   updateGoalAction,
   updateStepAction,
@@ -20,7 +24,7 @@ function useAct() {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  function act(fn: () => Promise<ActionResult<unknown>>, onOk?: () => void) {
+  function act(fn: () => Promise<ActionResult<unknown>>, onOk?: () => void, onFail?: () => void) {
     setError(null);
     setFields({});
     start(async () => {
@@ -29,6 +33,7 @@ function useAct() {
       else {
         setError(res.error);
         setFields(res.fields ?? {});
+        onFail?.();
       }
     });
   }
@@ -285,61 +290,163 @@ function StepList({ plan }: { plan: AreaPlan }) {
   const { roadmap, goals, canEdit } = plan;
   const [editing, setEditing] = useState<string | null>(null);
   const reorder = useAct();
+  const [relationError, setRelationError] = useState<string | null>(null);
+  const dnd = useStepReorder({
+    steps: roadmap.steps,
+    enabled: canEdit && !!roadmap.id && roadmap.steps.length > 1,
+    save: (ids, onFail) => {
+      const roadmapId = roadmap.id;
+      if (!roadmapId) return;
+      reorder.act(() => reorderStepsAction({ roadmapId, stepIds: ids }), undefined, onFail);
+    },
+  });
+  useLiveRefresh(dnd.isBusy);
+  const steps = dnd.ordered;
+
   if (roadmap.steps.length === 0) return <p className="muted">Henüz basamak yok.</p>;
 
-  function move(index: number, dir: -1 | 1) {
-    if (!roadmap.id) return;
-    const ids = roadmap.steps.map((s) => s.id);
-    const target = index + dir;
-    if (target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
-    reorder.act(() => reorderStepsAction({ roadmapId: roadmap.id, stepIds: ids }));
-  }
+  const approved = roadmap.status === "approved";
 
   return (
     <>
-      <ol className={styles.list}>
-        {roadmap.steps.map((s, i) => (
-          <li key={s.id} className={styles.item}>
-            {editing === s.id ? (
-              <StepForm key={s.id} plan={plan} step={s} onDone={() => setEditing(null)} />
-            ) : (
-              <StepView
-                step={s}
-                index={i}
-                last={i === roadmap.steps.length - 1}
-                goalTitle={goals.find((g) => g.id === s.goalId)?.title ?? null}
-                canEdit={canEdit}
-                busy={reorder.pending}
-                onMove={(d) => move(i, d)}
-                onEdit={() => setEditing(s.id)}
-              />
-            )}
-          </li>
-        ))}
+      {canEdit && steps.length > 1 && (
+        <p id="step-help" className={styles.help}>
+          Tutamaçtan sürükleyerek sırala (klavyede: Boşluk ile al, ok tuşlarıyla taşı, Boşluk ile bırak, Esc iptal).
+          Her basamağın üstündeki bağlaç, o basamağın <strong>önceki basamakla</strong> ilişkisidir; basamakla birlikte
+          taşınır ve yeni komşusuna göre anlam kazanır.
+          {approved && " Sıra ya da ilişki değişirse roadmap yeniden onaya gider."}
+        </p>
+      )}
+      <div className="sr-only" aria-live="polite" role="status">
+        {dnd.announce}
+      </div>
+      <ol className={styles.stepList}>
+        {steps.map((s, i) => {
+          const isDragged = dnd.drag?.id === s.id;
+          const isGrabbed = dnd.grabId === s.id;
+          return (
+            <li
+              key={s.id}
+              ref={dnd.registerItem(s.id)}
+              className={styles.stepLi}
+              data-dragging={isDragged || undefined}
+              data-grabbed={isGrabbed || undefined}
+              data-drop-before={dnd.dropBeforeId === s.id || undefined}
+              data-drop-end={dnd.dropEndId === s.id || undefined}
+              style={isDragged ? { transform: `translateY(${dnd.drag!.dy}px)` } : undefined}
+            >
+              {i > 0 && (
+                <RelationLink
+                  step={s}
+                  canEdit={canEdit && editing !== s.id}
+                  onError={setRelationError}
+                />
+              )}
+              <div className={styles.item}>
+                {editing === s.id ? (
+                  <StepForm key={s.id} plan={plan} step={s} onDone={() => setEditing(null)} />
+                ) : (
+                  <StepView
+                    step={s}
+                    index={i}
+                    goalTitle={goals.find((g) => g.id === s.goalId)?.title ?? null}
+                    canEdit={canEdit}
+                    handle={dnd.handleProps ? dnd.handleProps(s.id) : null}
+                    onEdit={() => setEditing(s.id)}
+                  />
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ol>
-      <ErrorLine error={reorder.error} />
+      <ErrorLine error={reorder.error ?? relationError} />
     </>
+  );
+}
+
+type HandleProps = {
+  grabbed: boolean;
+  attach: (el: HTMLButtonElement | null) => void;
+  onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => void;
+  onPointerMove: (e: React.PointerEvent<HTMLButtonElement>) => void;
+  onPointerUp: () => void;
+  onPointerCancel: () => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
+  onBlur: () => void;
+};
+
+/** İki basamak arası ilişki bağlacı: Paralel / Öncekinden sonra. */
+function RelationLink({
+  step,
+  canEdit,
+  onError,
+}: {
+  step: StepRow;
+  canEdit: boolean;
+  onError: (e: string | null) => void;
+}) {
+  const [pending, start] = useTransition();
+  const [override, setOverride] = useState<{ base: boolean; value: boolean } | null>(null);
+  const value = override && override.base === step.afterPrevious ? override.value : step.afterPrevious;
+
+  function choose(next: boolean) {
+    if (next === value || pending) return;
+    onError(null);
+    setOverride({ base: step.afterPrevious, value: next });
+    start(async () => {
+      const res = await setStepRelationAction({ stepId: step.id, afterPrevious: next });
+      if (!res.ok) {
+        setOverride(null);
+        onError(res.error);
+      }
+    });
+  }
+
+  const opts = [
+    { v: false, label: "Paralel", mark: "∥" },
+    { v: true, label: "Öncekinden sonra", mark: "→" },
+  ];
+  return (
+    <div className={styles.relation} data-seq={value || undefined}>
+      <span className={styles.relLine} aria-hidden="true">
+        {value ? <span className={styles.relSeq} /> : <><span className={styles.relPar} /><span className={styles.relPar} /></>}
+      </span>
+      {canEdit ? (
+        <div role="group" aria-label={`${step.title}: önceki basamakla ilişki`} className={styles.seg}>
+          {opts.map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              className={styles.segBtn}
+              aria-pressed={value === o.v}
+              disabled={pending}
+              onClick={() => choose(o.v)}
+            >
+              <span aria-hidden="true">{o.mark}</span> {o.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <span className="chip-row muted">{value ? "→ Öncekinden sonra" : "∥ Paralel"}</span>
+      )}
+    </div>
   );
 }
 
 function StepView({
   step,
   index,
-  last,
   goalTitle,
   canEdit,
-  busy,
-  onMove,
+  handle,
   onEdit,
 }: {
   step: StepRow;
   index: number;
-  last: boolean;
   goalTitle: string | null;
   canEdit: boolean;
-  busy: boolean;
-  onMove: (dir: -1 | 1) => void;
+  handle: HandleProps | null;
   onEdit: () => void;
 }) {
   const { pending, error, act } = useAct();
@@ -348,35 +455,44 @@ function StepView({
   const reasonId = `step-${step.id}-reason`;
   return (
     <>
-      <p className={styles.itemTitle}>
-        <span className={styles.num}>{index + 1}.</span>
-        {step.title}
-      </p>
+      <div className={styles.stepHead}>
+        {handle && (
+          <button
+            type="button"
+            ref={(el) => handle.attach(el)}
+            className={styles.grip}
+            aria-label={`${step.title} basamağını taşı`}
+            aria-describedby="step-help"
+            aria-pressed={handle.grabbed}
+            onPointerDown={handle.onPointerDown}
+            onPointerMove={handle.onPointerMove}
+            onPointerUp={handle.onPointerUp}
+            onPointerCancel={handle.onPointerCancel}
+            onKeyDown={handle.onKeyDown}
+            onBlur={handle.onBlur}
+          >
+            <span aria-hidden="true">⋮⋮</span>
+          </button>
+        )}
+        <p className={styles.itemTitle}>
+          <span className={styles.num}>{index + 1}.</span>
+          {step.title}
+        </p>
+      </div>
       {step.description && <p className={styles.text}>{step.description}</p>}
       <div className={styles.meta}>
         {goalTitle && <span className="chip">Hedef: {goalTitle}</span>}
         <span className="muted">Ticket: {step.ticketCount}</span>
+        {step.ticket && (
+          <TicketStateChip
+            status={step.ticket.status}
+            takeable={step.ticket.takeable}
+            blockedCount={step.ticket.blockedCount}
+          />
+        )}
       </div>
       {canEdit && (
         <div className={styles.actions}>
-          <button
-            type="button"
-            className="btn-line"
-            onClick={() => onMove(-1)}
-            disabled={busy || pending || index === 0}
-            aria-label={`${step.title} basamağını yukarı taşı`}
-          >
-            Yukarı
-          </button>
-          <button
-            type="button"
-            className="btn-line"
-            onClick={() => onMove(1)}
-            disabled={busy || pending || last}
-            aria-label={`${step.title} basamağını aşağı taşı`}
-          >
-            Aşağı
-          </button>
           <button type="button" className="btn-line" onClick={onEdit} disabled={pending}>
             Düzenle
           </button>

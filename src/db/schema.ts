@@ -57,6 +57,10 @@ export const user = pgTable(
     isMainAdmin: boolean("is_main_admin").notNull().default(false),
     canAnnounce: boolean("can_announce").notNull().default(false),
     active: boolean("active").notNull().default(true),
+    // Aşama 7.5: bağlı GitHub hesabı (OAuth ile doğrulanmış). Token SAKLANMAZ; yalnız kimlik ve ad.
+    githubId: text("github_id").unique(),
+    githubLogin: text("github_login"),
+    githubLinkedAt: ts("github_linked_at"),
   },
   (t) => [index("user_home_area_idx").on(t.homeAreaId)],
 );
@@ -153,6 +157,8 @@ export const applications = pgTable(
     email: text("email").notNull(),
     phone: text("phone").notNull(),
     intro: text("intro").notNull(),
+    /** Aşama 7.5: isteğe bağlı, beyan edilen GitHub kullanıcı adı (doğrulanmamış; yalnız bilgi). */
+    githubUsername: text("github_username"),
     status: applicationStatus("status").notNull().default("pending"),
     reviewedById: uuid("reviewed_by_id").references(() => user.id),
     reviewedAt: ts("reviewed_at"),
@@ -275,6 +281,12 @@ export const roadmapSteps = pgTable(
     position: integer("position").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
+    /**
+     * Aşama 7.4: önceki basamakla ilişki. false = paralel (beklemeden havuza çıkabilir), true = sıralı
+     * (önceki basamağın ticket'ı bitmeden alınamaz). Yalnız ticket'lara bölerken bağımlılığa çevrilir;
+     * sonrasında ilişkilerin tek kaynağı `ticket_dependencies`.
+     */
+    afterPrevious: boolean("after_previous").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [index("roadmap_steps_roadmap_idx").on(t.roadmapId, t.position)],

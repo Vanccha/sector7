@@ -1,5 +1,6 @@
 /** Başvuru ve hesap girdileri — SÖZLEŞME. İstemci ve sunucu aynı şemayı kullanır. */
 import { z } from "zod";
+import { githubUsernameSchema } from "./github";
 
 /** Better Auth username eklentisiyle uyumlu: küçük harf, rakam, alt çizgi, nokta. */
 export const USERNAME_PATTERN = /^[a-z0-9_.]{3,30}$/;
@@ -30,6 +31,8 @@ export const applicationInputSchema = z.object({
     .transform((p) => p.replace(/[\s()-]/g, ""))
     .pipe(z.string().regex(/^\+?[0-9]{10,15}$/, "Geçerli bir telefon numarası yaz (ör. 05xx xxx xx xx).")),
   intro: z.string().trim().min(20, "Kendini birkaç cümleyle tanıt (en az 20 karakter).").max(2000),
+  /** Aşama 7.5: isteğe bağlı, doğrulanmamış GitHub kullanıcı adı ("" → null). */
+  githubUsername: githubUsernameSchema.optional().transform((v) => v ?? null),
 });
 export type ApplicationInput = z.input<typeof applicationInputSchema>;
 

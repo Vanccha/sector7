@@ -1,11 +1,14 @@
 "use client";
 import { useState, useTransition } from "react";
-import { TICKET_STATUS_LABELS, isTicketEditable, type TicketRef, type TicketRow } from "@/lib/contracts/plan";
+import { TicketStateChip } from "@/components/plan/TicketStateChip";
+import { useLiveRefresh } from "@/components/plan/useLiveRefresh";
+import { isTicketEditable, type TicketRef, type TicketRow } from "@/lib/contracts/plan";
 import { addDependencyAction, removeDependencyAction, searchPrereqCandidatesAction } from "./actions";
 import type { DependencyProps } from "./DependencyWorkspace";
 import styles from "./Dependency.module.css";
 
 export function DependencyList({ tickets, canEdit }: DependencyProps) {
+  useLiveRefresh();
   const live = tickets.filter((t) => t.status !== "cancelled");
   if (live.length === 0) {
     return <p className={`cut-panel ${styles.skeleton}`}>Bu sprintte bağlantı kurulacak ticket yok.</p>;
@@ -64,16 +67,18 @@ function Card({ ticket: t, siblings, canEdit }: { ticket: TicketRow; siblings: T
         <h3 id={`${id}-h`} className={styles.cardTitle}>
           {t.title}
         </h3>
-        <span className="muted" style={{ fontSize: 13 }}>
-          {TICKET_STATUS_LABELS[t.status]}
-          {t.takeable ? " · Alınabilir" : t.blockedBy.length > 0 ? " · Kilitli" : ""}
-        </span>
+        <TicketStateChip
+          status={t.status}
+          takeable={t.takeable}
+          blockedCount={t.blockedBy.length}
+          hint={t.blockedBy.length ? `Bekleniyor: ${t.blockedBy.map((b) => b.title).join(", ")}` : undefined}
+        />
       </div>
       <div>
         <span className="label">Şundan sonra:</span>
         {t.prerequisites.length === 0 ? (
           <p className="muted" style={{ margin: "4px 0 0" }}>
-            Ön koşul yok.
+            Ön koşul yok: paralel.
           </p>
         ) : (
           <ul className={styles.chips}>
@@ -82,11 +87,34 @@ function Card({ ticket: t, siblings, canEdit }: { ticket: TicketRow; siblings: T
                 <span>
                   {p.title} · {p.areaName}
                 </span>
+                <span className={styles.seqTag}>sıralı</span>
                 {editable && (
-                  <button type="button" aria-label={`Kaldır: ${p.title}`} onClick={() => remove(p.id)} disabled={pending}>
-                    ×
+                  <button
+                    type="button"
+                    className={styles.parBtn}
+                    aria-label={`Paralel yap: ${p.title} ile bağlantıyı kaldır`}
+                    onClick={() => remove(p.id)}
+                    disabled={pending}
+                  >
+                    Paralel yap
                   </button>
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div>
+        <span className="label">Bitince açılacaklar:</span>
+        {t.dependents.length === 0 ? (
+          <p className="muted" style={{ margin: "4px 0 0" }}>
+            Bu ticket&apos;ı bekleyen yok.
+          </p>
+        ) : (
+          <ul className={styles.waitList}>
+            {t.dependents.map((d) => (
+              <li key={d.id}>
+                {d.title} · {d.areaName}
               </li>
             ))}
           </ul>

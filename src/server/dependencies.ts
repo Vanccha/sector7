@@ -13,7 +13,9 @@ import {
   PREREQ_DONE_STATUSES,
   searchPrereqSchema,
   type TicketRef,
+  type TicketStatus,
 } from "@/lib/contracts/plan";
+import { publishEvent } from "./realtime/publish";
 import { assertSprintOpen, getSprintOrThrow, requireAreaEditor } from "./plan-common";
 
 const refColumns = {
@@ -40,6 +42,58 @@ export function takeableCondition(): SQL {
     join tickets pt on pt.id = td.depends_on_id
     where td.ticket_id = ${tickets.id} and pt.status::text not in (${list(PREREQ_DONE_STATUSES)})
   ))`;
+}
+
+/** Bu ticket'ları ön koşul olarak bekleyenler (alanlar arası dahil). */
+export async function loadDependents(db: DbOrTx, ticketIds: string[]): Promise<Map<string, TicketRef[]>> {
+  const map = new Map<string, TicketRef[]>();
+  if (ticketIds.length === 0) return map;
+  const rows = await db
+    .select({ prereq: ticketDependencies.dependsOnId, ...refColumns })
+    .from(ticketDependencies)
+    .innerJoin(tickets, eq(tickets.id, ticketDependencies.ticketId))
+    .innerJoin(areas, eq(areas.id, tickets.areaId))
+    .where(inArray(ticketDependencies.dependsOnId, ticketIds))
+    .orderBy(asc(areas.name), asc(tickets.title));
+  for (const { prereq, ...ref } of rows) {
+    const arr = map.get(prereq) ?? [];
+    arr.push(ref);
+    map.set(prereq, arr);
+  }
+  return map;
+}
+
+export type StepTicketInfo = { id: string; status: TicketStatus; takeable: boolean; blockedCount: number };
+
+/** Basamak başına iptal edilmemiş ilk ticket (tek sorgu). */
+export async function loadStepTickets(db: DbOrTx, stepIds: string[]): Promise<Map<string, StepTicketInfo>> {
+  const map = new Map<string, StepTicketInfo>();
+  if (stepIds.length === 0) return map;
+  const rows = await db
+    .selectDistinctOn([tickets.roadmapStepId], {
+      stepId: tickets.roadmapStepId,
+      id: tickets.id,
+      status: tickets.status,
+      takeable: sql<boolean>`${takeableCondition()}`,
+      // Dikkat: tek tablolu select'te Drizzle `${tickets.id}`'yi nitelemeden ("id") yazar ve alt sorgudaki
+      // pt.id'ye bağlanır. Kimliği açıkça nitelenmiş yazıyoruz.
+      blockedCount: sql<number>`(select count(*)::int from ticket_dependencies td
+        join tickets pt on pt.id = td.depends_on_id
+        where td.ticket_id = "tickets"."id" and pt.status::text not in (${list(PREREQ_DONE_STATUSES)}))`,
+    })
+    .from(tickets)
+    .where(and(inArray(tickets.roadmapStepId, stepIds), ne(tickets.status, "cancelled")))
+    .orderBy(tickets.roadmapStepId, asc(tickets.createdAt), asc(tickets.id));
+  for (const r of rows) {
+    if (!r.stepId) continue;
+    map.set(r.stepId, {
+      id: r.id,
+      status: r.status,
+      takeable: Boolean(r.takeable),
+      blockedCount: Number(r.blockedCount),
+    });
+  }
+  return map;
 }
 
 export async function loadPrerequisites(db: DbOrTx, ticketIds: string[]): Promise<Map<string, TicketRef[]>> {
@@ -75,6 +129,49 @@ async function requireEditableWaiting(tx: DbOrTx, actor: Actor | null, ticketId:
   return { waiting, a };
 }
 
+/**
+ * Bağlantı ekleme çekirdeği: mevcutsa no-op, döngü kontrolü, insert, denetim ve gerçek zaman olayı.
+ * Yetkiyi ve `ticket_dependencies` advisory kilidini çağıran alır. Eklendiyse true döner.
+ */
+export async function insertDependencyTx(
+  tx: DbOrTx,
+  actorId: string,
+  waiting: { id: string; areaId: string },
+  dependsOnId: string,
+  opts: { auto?: boolean } = {},
+): Promise<boolean> {
+  const [existing] = await tx
+    .select({ id: ticketDependencies.ticketId })
+    .from(ticketDependencies)
+    .where(and(eq(ticketDependencies.ticketId, waiting.id), eq(ticketDependencies.dependsOnId, dependsOnId)))
+    .limit(1);
+  if (existing) return false;
+
+  const cycle = await tx.execute(sql`
+    with recursive reach(id) as (
+      select ${dependsOnId}::uuid
+      union
+      select d.depends_on_id from ticket_dependencies d join reach r on d.ticket_id = r.id
+    )
+    select 1 as hit from reach where id = ${waiting.id}::uuid limit 1`);
+  if (cycle.rows.length > 0) {
+    throw conflict("Bu bağlantı döngü oluşturur: ön koşul zaten bu ticket'ı bekliyor.");
+  }
+
+  await tx.insert(ticketDependencies).values({ ticketId: waiting.id, dependsOnId });
+  await audit(tx, {
+    actorId,
+    action: "ticket.dependency_add",
+    entityType: "ticket",
+    entityId: waiting.id,
+    areaId: waiting.areaId,
+    ticketId: waiting.id,
+    data: opts.auto ? { dependsOnId, auto: true } : { dependsOnId },
+  });
+  await publishEvent(tx, { kind: "tickets", areaId: waiting.areaId });
+  return true;
+}
+
 export async function addDependency(db: DB, actor: Actor | null, raw: { ticketId: string; dependsOnId: string }) {
   const input = dependencySchema.parse(raw);
   await db.transaction(async (tx) => {
@@ -82,37 +179,7 @@ export async function addDependency(db: DB, actor: Actor | null, raw: { ticketId
     const { waiting, a } = await requireEditableWaiting(tx, actor, input.ticketId);
     const pre = await loadTicket(tx, input.dependsOnId);
     if (pre.status === "cancelled") throw invalidState("İptal edilmiş ticket ön koşul olamaz.");
-
-    const [existing] = await tx
-      .select({ id: ticketDependencies.ticketId })
-      .from(ticketDependencies)
-      .where(
-        and(eq(ticketDependencies.ticketId, input.ticketId), eq(ticketDependencies.dependsOnId, input.dependsOnId)),
-      )
-      .limit(1);
-    if (existing) return;
-
-    const cycle = await tx.execute(sql`
-      with recursive reach(id) as (
-        select ${input.dependsOnId}::uuid
-        union
-        select d.depends_on_id from ticket_dependencies d join reach r on d.ticket_id = r.id
-      )
-      select 1 as hit from reach where id = ${input.ticketId}::uuid limit 1`);
-    if (cycle.rows.length > 0) {
-      throw conflict("Bu bağlantı döngü oluşturur: ön koşul zaten bu ticket'ı bekliyor.");
-    }
-
-    await tx.insert(ticketDependencies).values({ ticketId: input.ticketId, dependsOnId: input.dependsOnId });
-    await audit(tx, {
-      actorId: a.id,
-      action: "ticket.dependency_add",
-      entityType: "ticket",
-      entityId: input.ticketId,
-      areaId: waiting.areaId,
-      ticketId: input.ticketId,
-      data: { dependsOnId: input.dependsOnId },
-    });
+    await insertDependencyTx(tx, a.id, waiting, input.dependsOnId);
   });
 }
 
@@ -137,6 +204,7 @@ export async function removeDependency(db: DB, actor: Actor | null, raw: { ticke
       ticketId: input.ticketId,
       data: { dependsOnId: input.dependsOnId },
     });
+    await publishEvent(tx, { kind: "tickets", areaId: waiting.areaId });
   });
 }
 

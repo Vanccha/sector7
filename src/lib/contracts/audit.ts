@@ -3,6 +3,9 @@ export const AUDIT_ACTIONS = [
   "auth.sign_in",
   "auth.sign_out",
   "auth.password_set",
+  "github.link",
+  "github.unlink",
+  "roadmap.step_relation",
   "user.create_main_admin",
   "user.grant_main_admin",
   "user.revoke_main_admin",
@@ -76,6 +79,9 @@ export const AUDIT_ACTION_LABELS: Record<(typeof AUDIT_ACTIONS)[number], string>
   "auth.sign_in": "Giriş yaptı",
   "auth.sign_out": "Çıkış yaptı",
   "auth.password_set": "Şifre belirledi",
+  "github.link": "GitHub hesabını bağladı",
+  "github.unlink": "GitHub bağlantısını kaldırdı",
+  "roadmap.step_relation": "Basamak ilişkisini değiştirdi",
   "user.create_main_admin": "Ana yönetici hesabı açıldı (CLI)",
   "user.grant_main_admin": "Ana yönetici yetkisi verdi",
   "user.revoke_main_admin": "Ana yönetici yetkisini aldı",
@@ -144,6 +150,7 @@ export const AUDIT_ACTION_LABELS: Record<(typeof AUDIT_ACTIONS)[number], string>
 /** Filtre grupları (eylem öneki → etiket). */
 export const AUDIT_ACTION_GROUPS: { value: string; label: string }[] = [
   { value: "auth.", label: "Giriş / şifre" },
+  { value: "github.", label: "GitHub" },
   { value: "user.", label: "Kişiler" },
   { value: "application.", label: "Başvurular" },
   { value: "personal_data.", label: "Kişisel veri" },

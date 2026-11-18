@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from "react";
 import type { TicketRef, TicketRow } from "@/lib/contracts/plan";
 import { DependencyEditor } from "./DependencyEditor";
+import styles from "./Dependency.module.css";
 import { DependencyList } from "./DependencyList";
 
 const QUERY = "(min-width: 900px)";
@@ -25,5 +26,13 @@ export function DependencyWorkspace(props: DependencyProps) {
     () => window.matchMedia(QUERY).matches,
     () => false,
   );
-  return wide ? <DependencyEditor {...props} /> : <DependencyList {...props} />;
+  return (
+    <>
+      <p className={`notice ${styles.banner}`} role="note">
+        Bağlantı yok = paralel: yayınlanınca hemen havuza çıkar. Sıralı iş, ön koşulu teslim edilince kendiliğinden
+        alınabilir olur.
+      </p>
+      {wide ? <DependencyEditor {...props} /> : <DependencyList {...props} />}
+    </>
+  );
 }
