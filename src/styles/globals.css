@@ -1,0 +1,466 @@
+@import "./tokens.css";
+
+/* ---------- Temel ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--tx);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.5s;
+}
+a {
+  color: var(--ac-tx);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--ac-hi);
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--ac-tx);
+  outline-offset: 3px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Tipografi ---------- */
+.wordmark {
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.16em;
+}
+.h-wide {
+  font-stretch: 125%;
+  font-weight: 700;
+}
+.panel-h {
+  font-size: 15px;
+  font-weight: 600;
+  font-stretch: 112%;
+  margin: 0;
+  color: var(--tx);
+}
+.muted {
+  color: var(--mut);
+}
+.count {
+  font-stretch: 125%;
+  font-weight: 700;
+  color: var(--ac-tx);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Kesik köşeli yüzeyler ---------- */
+.cut-panel {
+  position: relative;
+  background: var(--panel);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut))
+  );
+  padding: 20px;
+}
+.cut-panel--raised {
+  background: var(--panel2);
+}
+
+/* Referanstaki .chip: tıklanabilir kart */
+.chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 18px 14px 16px;
+  border: 0;
+  background: none;
+  color: var(--tx);
+  cursor: pointer;
+  transition: transform 0.28s var(--ease-snap);
+}
+.chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--panel);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  transition: background 0.3s;
+}
+.chip > * {
+  position: relative;
+  z-index: 1;
+}
+.chip:hover::before {
+  background: var(--panel2);
+}
+.chip.is-charged {
+  transform: translateX(10px);
+}
+.chip.is-charged::before {
+  background: var(--sel);
+}
+.chip.is-charged::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  z-index: 2;
+  background: linear-gradient(90deg, transparent 0, var(--hot-tx) 40%, #fff 50%, var(--hot-tx) 60%, transparent 100%);
+  background-size: 220% 100%;
+  animation: current 0.85s linear infinite;
+}
+.chip-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--mut);
+}
+.chip-title {
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.chip-meta {
+  font-size: 13px;
+  font-stretch: 125%;
+  font-weight: 600;
+  color: var(--ac-tx);
+}
+.chip-urgent {
+  color: var(--hot-tx);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-weight: 600;
+}
+.chip-urgent::before {
+  content: "";
+  width: 9px;
+  height: 8px;
+  background: var(--hot-tx);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* Üçgen düğüm (referanstaki .tri-wrap sadeleştirilmiş) */
+.tri {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 49px;
+}
+.tri::before,
+.tri::after {
+  content: "";
+  position: absolute;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.tri::before {
+  inset: 0;
+  background: var(--edge);
+}
+.tri::after {
+  inset: 3px 4px 1px 4px;
+  background: var(--tri);
+}
+
+/* ---------- Düğmeler ---------- */
+.btn-solid,
+.btn-line,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+.btn-solid {
+  background: var(--ac);
+  border: 0;
+  color: var(--on-ac);
+  font-weight: 600;
+  clip-path: polygon(0 0, calc(100% - var(--cut-sm)) 0, 100% var(--cut-sm), 100% 100%, var(--cut-sm) 100%, 0 calc(100% - var(--cut-sm)));
+}
+.btn-solid:hover {
+  background: var(--ac2);
+  color: var(--on-ac);
+}
+.btn-line {
+  background: none;
+  border: 1px solid var(--btn-line);
+  color: var(--tx);
+}
+.btn-line:hover {
+  border-color: var(--ac-tx);
+  color: var(--tx);
+}
+.btn-ghost {
+  background: none;
+  border: 0;
+  color: var(--mut);
+  padding-inline: 8px;
+}
+.btn-ghost:hover {
+  color: var(--tx);
+}
+.btn-danger {
+  border-color: var(--hot);
+  color: var(--hot-tx);
+}
+.btn-solid:disabled,
+.btn-line:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-block {
+  width: 100%;
+}
+
+/* ---------- Form ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+.hint {
+  font-size: 13px;
+  color: var(--mut);
+  margin: 0;
+}
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  border-radius: 0;
+  color: var(--tx);
+  font-size: 16px; /* iOS yakınlaştırmasını önler */
+}
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.input:hover,
+.select:hover,
+.textarea:hover {
+  border-color: var(--btn-line);
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--ac-tx);
+  box-shadow: 0 0 0 1px var(--ac-tx);
+}
+.input[aria-invalid="true"],
+.select[aria-invalid="true"],
+.textarea[aria-invalid="true"] {
+  border-color: var(--hot-tx);
+}
+.field-error {
+  font-size: 13px;
+  color: var(--hot-tx);
+  margin: 0;
+}
+
+/* Bilgi kutusu */
+.notice {
+  border-left: 3px solid var(--ac-tx);
+  background: var(--panel);
+  padding: 12px 14px;
+  font-size: 14px;
+}
+.notice--hot {
+  border-left-color: var(--hot-tx);
+}
+.notice--ok {
+  border-left-color: var(--ok);
+}
+
+/* ---------- Başlık parçaları ---------- */
+.beta-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px 2px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  font-stretch: 125%;
+  letter-spacing: 0.14em;
+  color: var(--rec-tx);
+  background: var(--rec);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+.lamp {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--line);
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+.lamp.is-g {
+  background: var(--lamp-g);
+  box-shadow: 0 0 10px var(--lamp-g);
+}
+.lamp.is-y {
+  background: var(--lamp-y);
+  box-shadow: 0 0 10px var(--lamp-y);
+  animation: blinkL 1.4s steps(2) infinite;
+}
+.lamp.is-r {
+  background: var(--lamp-r);
+  box-shadow: 0 0 12px var(--lamp-r);
+  animation: blinkL 0.7s steps(2) infinite;
+}
+
+.days {
+  display: inline-flex;
+  align-items: center;
+}
+.dy {
+  position: relative;
+  display: block;
+  width: 9px;
+  height: 26px;
+}
+.dy::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 7px;
+  bottom: 7px;
+  background: var(--line2);
+}
+.dy.wk {
+  margin-left: 5px;
+}
+.dy.is-g::before {
+  background: var(--lamp-g);
+}
+.dy.is-y::before {
+  background: var(--lamp-y);
+}
+.dy.is-r::before {
+  background: var(--lamp-r);
+}
+.dy.is-now::before {
+  top: 2px;
+  bottom: 2px;
+  box-shadow: 0 0 10px var(--ac-tx);
+  animation: blinkL 1.4s steps(2) infinite;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 2px;
+  border-bottom: 2px solid transparent;
+  color: var(--mut);
+  font-size: 15px;
+}
+.nav-link:hover {
+  color: var(--tx);
+}
+.nav-link[aria-current="page"] {
+  color: var(--tx);
+  border-bottom-color: var(--hot);
+}
+
+/* ---------- Animasyonlar ---------- */
+@keyframes current {
+  from {
+    background-position: 220% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@keyframes blinkL {
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes arrive {
+  0% {
+    background: var(--sel);
+    transform: translateX(-12px);
+  }
+  100% {
+    background: transparent;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

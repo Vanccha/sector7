@@ -1,0 +1,120 @@
+/*
+ * Kıvılcım Alanı tasarım token'ları — SÖZLEŞME.
+ * Kaynak: referans/kivilcim-alani.html (.ks, .ks.th-amber, .ks.th-red).
+ * Tema kökteki data-theme ile seçilir: blue (sprintin ilk üçte biri), amber, red.
+ * Bileşenler yalnız bu değişkenleri kullanır; sabit renk yazmaz.
+ */
+
+:root,
+[data-theme="blue"] {
+  --bg: #070915;
+  --panel: #0e1230;
+  --panel2: #141a44;
+  --line: #161c48;
+  --line2: #1c2358;
+  --tx: #e8e9f3;
+  --tx2: #c9cce4;
+  --mut: #9097c0;
+  --ac: #2b3fd1;
+  --ac2: #3a4ce0;
+  --ac-tx: #7d8cff;
+  --ac-hi: #a3aeff;
+  --edge: #1e2b93;
+  --sel: #1a2370;
+  --tri: #0b0f28;
+  --btn-line: #2a3270;
+  --hot-tx: #ff5a4e;
+  --hot: #d21f14;
+  --hot-hi: #ff6a5f;
+  --rec: #d21f14;
+  --rec-tx: #ffffff;
+  --mk1: #2b3fd1;
+  --mk2: #d21f14;
+  --on-ac: #ffffff;
+  /* Kıvılcım efekti (canvas) için RGB üçlüleri */
+  --fx-glow: 80, 100, 255;
+  --fx-bolt: 70, 92, 255;
+  --fx-branch: 255, 74, 61;
+  --fx-ring: 255, 74, 61;
+  --fx-burst-1: #ff4a3d;
+  --fx-burst-2: #ffffff;
+  --fx-burst-3: #7d8cff;
+  color-scheme: dark;
+}
+
+[data-theme="amber"] {
+  --bg: #111214;
+  --panel: #1c1d21;
+  --panel2: #24262b;
+  --line: #2a2b2e;
+  --line2: #33353a;
+  --tx: #ece8dc;
+  --tx2: #dcd8cb;
+  --mut: #a9a69c;
+  --ac: #c77700;
+  --ac2: #e08a00;
+  --ac-tx: #ffb547;
+  --ac-hi: #ffd08a;
+  --edge: #6b4a12;
+  --sel: #3a2c12;
+  --tri: #141310;
+  --btn-line: #45474d;
+  --rec: #c77700;
+  --mk1: #ffb547;
+  --mk2: #ff4033;
+  --fx-glow: 255, 170, 60;
+  --fx-bolt: 240, 150, 30;
+  --fx-burst-3: #ffb547;
+}
+
+[data-theme="red"] {
+  --bg: #111214;
+  --panel: #1c1d21;
+  --panel2: #24262b;
+  --line: #2a2b2e;
+  --line2: #33353a;
+  --tx: #ece8dc;
+  --tx2: #dcd8cb;
+  --mut: #a9a69c;
+  --ac: #b3170e;
+  --ac2: #d21f14;
+  --ac-tx: #ff6a5c;
+  --ac-hi: #ffb3aa;
+  --edge: #6e1410;
+  --sel: #3a1412;
+  --tri: #140f0f;
+  --btn-line: #45474d;
+  --hot-tx: #ffd34d;
+  --hot: #f2b705;
+  --hot-hi: #ffd34d;
+  --rec: #f2b705;
+  --rec-tx: #111214;
+  --mk1: #ff4033;
+  --mk2: #7a0e09;
+  --fx-glow: 255, 70, 50;
+  --fx-bolt: 235, 40, 25;
+  --fx-branch: 255, 211, 77;
+  --fx-ring: 255, 211, 77;
+  --fx-burst-1: #ffd34d;
+  --fx-burst-3: #ff6a5c;
+}
+
+:root {
+  /* Temadan bağımsız sabitler */
+  --lamp-g: #4bd27a;
+  --lamp-y: #f2b705;
+  --lamp-r: #ff4033;
+  --ok: #4bd27a;
+  --font: var(--font-saira), "Saira", system-ui, sans-serif;
+  --cut: 16px; /* kart köşe kesiği */
+  --cut-sm: 8px;
+  --ease-snap: cubic-bezier(0.2, 0.9, 0.1, 1);
+  --gutter: 16px;
+  --tap: 44px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 32px;
+  }
+}
