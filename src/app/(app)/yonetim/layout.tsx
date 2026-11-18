@@ -6,6 +6,7 @@ const TABS = [
   { href: "/yonetim/basvurular", label: "Başvurular" },
   { href: "/yonetim/alanlar", label: "Alanlar" },
   { href: "/yonetim/sprintler", label: "Sprintler" },
+  { href: "/yonetim/talepler", label: "Talepler" },
   { href: "/yonetim/roadmapler", label: "Roadmap onayları" },
 ];
 

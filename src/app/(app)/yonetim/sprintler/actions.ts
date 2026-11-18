@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { runAction } from "@/lib/action";
 import { getActor } from "@/lib/auth/session";
 import type { ActionResult } from "@/lib/contracts/errors";
+import { beginSprintClose } from "@/server/sprint-end";
 import { createSprint, startSprint, updateSprint } from "@/server/sprints";
 
 const PATH = "/yonetim/sprintler";
@@ -37,6 +38,15 @@ export async function updateSprintAction(input: {
 export async function startSprintAction(input: { sprintId: string }): Promise<ActionResult<undefined>> {
   return runAction(async () => {
     await startSprint(db, await getActor(), input);
+    revalidatePath(PATH);
+    revalidatePath("/", "layout");
+    return undefined;
+  });
+}
+
+export async function beginSprintCloseAction(input: { sprintId: string }): Promise<ActionResult<undefined>> {
+  return runAction(async () => {
+    await beginSprintClose(db, await getActor(), input);
     revalidatePath(PATH);
     revalidatePath("/", "layout");
     return undefined;

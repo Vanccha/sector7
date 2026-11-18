@@ -1,10 +1,15 @@
+import Link from "next/link";
 import { db } from "@/db";
 import { requirePageActor } from "@/lib/auth/session";
 import { areas } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { SparkRequest } from "@/components/tickets/SparkRequest";
+import { TicketCardItem } from "@/components/tickets/shared";
+import { getMyTickets } from "@/server/pool";
 
 export default async function HomePage() {
   const actor = await requirePageActor();
+  const view = await getMyTickets(db, actor);
   const [home] = actor.homeAreaId
     ? await db.select({ name: areas.name }).from(areas).where(eq(areas.id, actor.homeAreaId)).limit(1)
     : [];
@@ -20,14 +25,31 @@ export default async function HomePage() {
           Ticket&apos;ları ana alanın dışındaki alanlardan alırsın. Böylece birçok alanda yetkinlik kazanırsın.
         </p>
       </section>
-      <section className="cut-panel cut-panel--raised" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <h2 className="panel-h">Ticket iste</h2>
-        <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-          Kıvılcım çakıp rastgele bir ticket alma bir sonraki aşamada açılacak.
-        </p>
-        <button className="btn-solid" disabled>
-          Kıvılcım çak
-        </button>
+      <SparkRequest initial={view} />
+      <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="active-h">
+        <h2 className="panel-h" id="active-h">
+          Üstlendiklerin
+        </h2>
+        {view.active.length === 0 ? (
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+            Şu an üstlendiğin bir ticket yok.
+          </p>
+        ) : (
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+            {view.active.slice(0, 3).map((t) => (
+              <li key={t.id}>
+                <TicketCardItem t={t} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link
+          href="/ticketlarim"
+          className="btn-line"
+          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", minHeight: "var(--tap)" }}
+        >
+          Tüm ticket&apos;larım
+        </Link>
       </section>
     </div>
   );

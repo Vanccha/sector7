@@ -1,6 +1,6 @@
 # SECTOR7 — AllSpark çalışma sistemi
 
-AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA, Aşama 1 (Temel)**.
+AllSpark öğrenci yazılım topluluğunun iş sistemi: alanlar, sprintler, roadmap'ler, rastgele çekilen ticket'lar, iletişim ve ana yönetici paneli. Durum: **BETA, Aşama 3 (Ticket döngüsü)**.
 
 - İş kuralları: [`PROMPT.md`](PROMPT.md)
 - Teknik kararlar: [`docs/KARARLAR.md`](docs/KARARLAR.md)
@@ -44,6 +44,22 @@ Tarayıcıda <http://localhost:3000>.
 2. Ana yöneticiyle `/giris` → **Başvurular** → ana alan seç → **Onayla**. Tek kullanımlık şifre bağlantısı ekranda görünür (ve `npm run dev` konsoluna yazılır).
 3. Bağlantıyı aç (`/sifre/...`), şifre belirle, yeni hesapla giriş yap.
 
+**Plan (Aşama 2)** — ana yöneticiyle:
+
+4. **Yönetim → Alanlar**: bir alana yönetici ata. **Yönetim → Sprintler**: sprint aç ve başlat.
+5. **Alanlarım → alan → Hedef ve roadmap**: hedef ve basamak ekle, onaya gönder; **Yönetim → Roadmap onayları**'ndan onayla.
+6. **Ticket'lar**: basamaklardan ticket oluştur ve yayınla; **Bağımlılıklar**'da sıralı ilişkileri kur.
+
+**Ticket döngüsü (Aşama 3)** — ana alanı ticket'ın alanından farklı bir üyeyle (kişi kendi ana alanından ve yönettiği alanlardan ticket alamaz):
+
+7. Ana sayfa → **Kıvılcım çak**: rastgele bir ticket teklif edilir. Kabul et (72 saat başlar) ya da reddet (sprint başına 2 hak; hak bitince gelen ticket doğrudan sende olur). Cevapsız teklif 30 dk sonra havuza döner.
+8. **Ticket'larım → ticket**: geri sayımı gör; **Ek süre iste** ya da **Geri çekilmesini iste**. Talep beklerken geri sayım durur.
+9. Alan yöneticisiyle **Alanlarım → Takip** ya da ana yöneticiyle **Yönetim → Talepler**: talebi aç; soru sor, onayla (saat belirt) ya da reddet.
+10. Üyeyle teslim et (açıklama + bağlantı + isteğe bağlı dosya). Alan yöneticisi/ana yönetici **İyi oldu / Kötü oldu** ile değerlendirir.
+11. Ana yönetici **Yönetim → Sprintler → Kapanışı başlat**: bitmemiş ticket'lar `/sprint/<id>/kapanis` ekranında ticket ticket karara bağlanır (taşı, aynı kişide bırak, havuza koy, iptal). Taşıma için önce sonraki sprinti planla. Hepsi karara bağlanınca **Sprinti kapat**.
+
+Zamanlanmış işler (süre uyarısı/dolumu, teklif dolumu, talep hatırlatması ve cevapsız işareti) `npm run dev`/`npm start` içinde dakikada bir çalışır. Elle tetiklemek için `npm run jobs:tick`; kapatmak için `SCHEDULER_DISABLED=1`. Bildirimler şimdilik yalnız veritabanına yazılır (ekranı Aşama 4'te).
+
 ### Faydalı komutlar
 
 | Komut | Ne yapar |
@@ -56,6 +72,7 @@ Tarayıcıda <http://localhost:3000>.
 | `npm run db:migrate` | Bekleyen göçleri uygular |
 | `npm run db:seed` | Başlangıç verisi |
 | `npm run db:studio` | Drizzle Studio (veritabanı gezgini) |
+| `npm run jobs:tick` | Zamanlanmış işleri bir kez çalıştırır |
 
 ## Testler
 

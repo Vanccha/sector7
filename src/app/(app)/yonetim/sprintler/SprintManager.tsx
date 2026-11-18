@@ -1,7 +1,8 @@
 "use client";
 import { useState, useTransition } from "react";
 import { SPRINT_STATUS_LABELS, type SprintRow } from "@/lib/contracts/plan";
-import { createSprintAction, startSprintAction, updateSprintAction } from "./actions";
+import Link from "next/link";
+import { beginSprintCloseAction, createSprintAction, startSprintAction, updateSprintAction } from "./actions";
 import { endDate, formatDate } from "./dates";
 import styles from "./SprintManager.module.css";
 
@@ -21,7 +22,6 @@ export function SprintManager({
   return (
     <div className={styles.page}>
       <h1 className="h-wide">Sprintler</h1>
-      <p className="muted">Sprint kapanışı ve bitmemiş ticket kararları bir sonraki aşamada.</p>
 
       <section className={styles.section} aria-labelledby="aktif-sprint">
         <h2 id="aktif-sprint" className={`h-wide ${styles.sectionTitle}`}>
@@ -69,6 +69,13 @@ export function SprintManager({
                     <span className="muted">{SPRINT_STATUS_LABELS[s.status]}</span>
                   </div>
                   <Meta sprint={s} />
+                  {s.status === "closing" && (
+                    <div className={styles.actions}>
+                      <Link href={`/sprint/${s.id}/kapanis`} className="btn-solid">
+                        Kapanış kararları
+                      </Link>
+                    </div>
+                  )}
                 </article>
               </li>
             ))}
@@ -106,6 +113,7 @@ function SprintCard({ sprint, activeExists }: { sprint: SprintRow; activeExists:
   const [lengthDays, setLengthDays] = useState(String(sprint.lengthDays));
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [confirmClose, setConfirmClose] = useState(false);
   const isActive = sprint.status === "active";
   const id = `sprint-${sprint.id}`;
 
@@ -125,6 +133,15 @@ function SprintCard({ sprint, activeExists }: { sprint: SprintRow; activeExists:
         setError(res.error);
         setFields(res.fields ?? {});
       }
+    });
+  }
+
+  function beginClose() {
+    setError(null);
+    startTransition(async () => {
+      const res = await beginSprintCloseAction({ sprintId: sprint.id });
+      if (!res.ok) setError(res.error);
+      setConfirmClose(false);
     });
   }
 
@@ -223,12 +240,32 @@ function SprintCard({ sprint, activeExists }: { sprint: SprintRow; activeExists:
             <button type="button" className="btn-line" onClick={() => setEditing(true)} disabled={pending}>
               Düzenle
             </button>
+            {isActive && !confirmClose && (
+              <button type="button" className="btn-line" onClick={() => setConfirmClose(true)} disabled={pending}>
+                Kapanışı başlat
+              </button>
+            )}
             {!isActive && (
               <button type="button" className="btn-solid" onClick={start} disabled={pending || activeExists}>
                 Başlat
               </button>
             )}
           </div>
+          {isActive && confirmClose && (
+            <div className="notice notice--hot" role="group" aria-label="Kapanışı onayla">
+              <p style={{ margin: "0 0 10px" }}>
+                Emin misin? Bitmemiş ticket&apos;lar karar bekleyecek; sprint aktif olmaktan çıkar ve havuz kapanır.
+              </p>
+              <div className={styles.actions}>
+                <button type="button" className="btn-danger" onClick={beginClose} disabled={pending}>
+                  Evet, kapanışı başlat
+                </button>
+                <button type="button" className="btn-ghost" onClick={() => setConfirmClose(false)} disabled={pending}>
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          )}
           {!isActive && activeExists && (
             <p className="muted">Aynı anda tek aktif sprint olabilir; önce aktif sprint kapanmalı.</p>
           )}

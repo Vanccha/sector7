@@ -2,6 +2,11 @@
 {$DOMAIN} {
 	encode zstd gzip
 
+	# Üst sınır (ayardaki uploadMaxMb en fazla 500). Asıl sınırı uygulama ayardan uygular.
+	request_body {
+		max_size 512MB
+	}
+
 	reverse_proxy app:3000 {
 		# İstemciden gelen sahte X-Forwarded-For'a güvenme; gerçek bağlantı IP'sini yaz.
 		header_up X-Forwarded-For {remote_host}

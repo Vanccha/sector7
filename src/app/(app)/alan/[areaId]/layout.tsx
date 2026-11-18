@@ -47,6 +47,7 @@ export default async function AreaLayout({
             { href: base, label: "Hedef ve roadmap", exact: true },
             { href: `${base}/ticketlar`, label: "Ticket'lar" },
             { href: `${base}/bagimliliklar`, label: "Bağımlılıklar" },
+            { href: `${base}/takip`, label: "Takip" },
           ]}
         />
       </Suspense>

@@ -78,4 +78,45 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 
 ### Ertelenen
 - Gerçek zamanlı iletişim (Aşama 4): PostgreSQL LISTEN/NOTIFY + Server-Sent Events planlanıyor (tek sunucu, ek servis yok).
-- Zamanlayıcı (Aşama 3): pg-boss (PostgreSQL üzerinde, ek altyapı gerektirmez) planlanıyor.
+- Zamanlayıcı: Aşama 3'te pg-boss yerine kendi idempotent taraması seçildi (aşağıda).
+
+## Aşama 3 — Ticket döngüsü (2026-11-18)
+
+### Geliştiricinin verdiği iş kuralı kararları
+- "Ticket iste" → ticket kişiye önce **teklif** (`offered`) olarak düşer. Kabul → `taken`, 72 saat başlar. Red → sprint başına hak (varsayılan 2) harcanır, ticket havuza döner; red otomatik yeni ticket çekmez, kişi "yenisini iste" der.
+- **Red hakkı bittiyse** istenen ticket doğrudan atanır (`taken`, teklif yok). Arayüz istemeden önce ve son reddi yaparken uyarır.
+- Cevapsız teklif **30 dk** sonra hak düşmeden havuza döner.
+- GitHub: private `sector7` deposu kurulup push edilir.
+
+### Havuz ve teklif
+- Havuz: aktif sprintin, arşivsiz alanların alınabilir ticket'ları (`takeableCondition`); kişinin ana alanı **ve yönettiği alanlar** hariç; kişinin bu sprintte reddettikleri hariç. Seçim `ORDER BY random() LIMIT 1 FOR UPDATE OF tickets SKIP LOCKED` — eşzamanlı isteklerde aynı ticket iki kişiye düşmez. Aynı kişinin çift tıklaması `pg_advisory_xact_lock(hashtext('ticket-request:'||userId))` ile sıraya girer; bekleyen teklif varsa yeni çekilmez, o döner.
+- Teklif kabulünde süresi geçmişse hata verilir (değişiklik yok); havuza dönüşü zamanlayıcı ya da kişinin bir sonraki isteği yapar.
+- Red hakkı ticket'ın sprintine göre sayılır (`ticket_rejections`).
+
+### Süre ve talepler
+- Tüm süre matematiği `src/lib/ticket-time.ts`'te: `dueAt` teslim son anı; talep beklerken `pausedAt` dolar, kalan = `dueAt - pausedAt` donar; devamda `dueAt` duraklama kadar ileri itilir (ek süre onayında ayrıca `grantedHours`). dueAt ileri kayınca geçersiz kalan `warnedAt`/`expiredNotifiedAt` temizlenir.
+- Talep yalnız ticket'ı yapan kişiden, ticket `taken` iken (süre dolmuş olsa da); ticket başına tek bekleyen talep. Konuşma ticket kanalında (`channels.kind='ticket'`, tembel açılır), mesajlar `requestId` ile bağlı.
+- Yönetici soru sorunca `awaitingRequesterAt` dolar ve cevap süresi işlemez; talep sahibi cevaplayınca `respondBy` yeniden başlar, hatırlatma/cevapsız işaretleri sıfırlanır.
+- Cevaplayan: alanın yöneticisi ya da ana yönetici, ama talep sahibi değil. Talep otomatik sonuçlanmaz. Talep sahibi bekleyen talebini geri alabilir.
+- Geri çekme onayı ticket'ı aynı sprintin havuzuna döndürür.
+
+### Teslim ve değerlendirme
+- Teslim: açıklama + 0-10 http(s) bağlantı + 0-5 dosya. Süre dolduktan sonra da teslim edilir (sistem cezalandırmaz). Bekleyen talep varken teslim, talebi geri alır. `submitted` iken yeniden teslim olur, en sonuncusu geçerli; değerlendirildikten sonra teslim yok.
+- Dosyalar route handler'la yüklenir (`POST /api/dosya`, server action'ın gövde sınırına takılmasın diye), `UPLOAD_DIR/yyyy/mm/uuid`; sahipsiz doğar, teslimde bağlanır. İndirme `GET /api/dosya/[id]`: sahibi ya da ticket'ı görebilen; diğerlerine 404.
+- Değerlendirme: alan yöneticisi/ana yönetici, kendi teslimini değil; değerlendirici başına tek kayıt (güncellenebilir).
+- Ticket'ı görebilen: üzerindeki kişi (teklif dahil) ve alanı yönetebilen. Üyeler havuzu listeleyemez.
+
+### Sprint sonu
+- Ana yönetici `active → closing` başlatır: sprint aktif olmaktan çıkar (havuz kapanır, yeni sprint başlatılabilir), bekleyen teklifler havuza döner. Bitmemiş = `submitted/evaluated/cancelled` dışındaki her ticket (taslak dahil).
+- Kararlar ticket bazında, alan yöneticisi (kendi alanları) ve ana yönetici; hemen uygulanır ve `sprint_end_decisions`'a yazılır. Hedef sprint: aktif sprint (kapanan değilse), yoksa en küçük numaralı planlanmış; yoksa taşıma seçenekleri kullanılamaz.
+- Seçenekler kayıtla genişler: `SPRINT_END_OPTIONS` (`appliesTo`, `needsNextSprint`) + `src/server/sprint-end.ts` `HANDLERS` (anahtar tipine bağlı; handler yazılmadan seçenek eklenirse tsc hata verir).
+  - Taşı: sprint değişir, durum aynen. Aynı kişide bırak: sonraki sprint, süre yeniden başlar (talep sürüyorsa duruk kalır). Havuza koy: bekleyen talep geri alınır, kişiden alınır. İptal: bekleyen talep geri alınır.
+- Tüm bitmemişler karara bağlanınca ana yönetici `closing → closed`.
+
+### Zamanlayıcı
+- pg-boss yerine **şemadaki işaret sütunlarıyla idempotent tarama** (`src/server/scheduler.ts` `runScheduledTick`): ek bağımlılık ve tablo yok, aynı anı iki kez taramak ikinci bildirim üretmez, tek sunucuya uygun. Tek transaction, `pg_try_advisory_xact_lock` ile aynı anda tek çalışma.
+- Adımlar: teklif dolumu (30 dk), süre uyarısı (`dueAt - ticketWarnBeforeHours`), süre dolumu bildirimi, talep hatırlatması (cevap süresinin son çeyreği), cevapsız işareti (`overdueAt`; yönetici + ana yöneticilere bildirim, panelde öne çıkar). Duraklı ticket'a uyarı yok; yönetici soru sormuşken hatırlatma yok.
+- Çalıştırıcı: `src/instrumentation.ts` → Node çalışma ortamında 60 sn'de bir (`SCHEDULER_DISABLED=1` ile kapanır). Elle: `npm run jobs:tick`.
+
+### Bildirimler
+- `src/lib/notify.ts` uygulama içi `notifications` satırı yazar, kişinin `notification_prefs.inApp=false` tercihine uyar. Türler `src/lib/contracts/notifications.ts`. Alıcı alan yöneticisi yoksa (ya da talep sahibinin kendisiyse) ana yöneticiler. Push ve gerçek zaman Aşama 4.

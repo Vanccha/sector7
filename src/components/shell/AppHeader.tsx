@@ -8,7 +8,7 @@ import { SignOutButton } from "./SignOutButton";
 import { SprintStatus } from "./SprintStatus";
 
 export function navFor(actor: Actor): NavItem[] {
-  const items: NavItem[] = [{ href: "/", label: "Ana sayfa" }];
+  const items: NavItem[] = [{ href: "/", label: "Ana sayfa" }, { href: "/ticketlarim", label: "Ticket'larım" }];
   if (actor.isMainAdmin || actor.managedAreaIds.length > 0) items.push({ href: "/alan", label: "Alanlarım" });
   if (actor.isMainAdmin) items.push({ href: "/yonetim", label: "Yönetim" });
   return items;

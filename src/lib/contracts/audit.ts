@@ -37,6 +37,26 @@ export const AUDIT_ACTIONS = [
   "ticket.publish",
   "ticket.dependency_add",
   "ticket.dependency_remove",
+  // Aşama 3 — ticket döngüsü
+  "ticket.request_draw", // ticket iste (sonuç data.kind: offered | taken | empty)
+  "ticket.offer_accept",
+  "ticket.offer_reject",
+  "ticket.offer_expired", // zamanlayıcı / sprint kapanışı (actorId null olabilir)
+  "ticket.submit",
+  "ticket.evaluate",
+  "ticket.due_warned", // zamanlayıcı
+  "ticket.expired", // zamanlayıcı
+  "request.create",
+  "request.message",
+  "request.approve",
+  "request.reject",
+  "request.cancel",
+  "request.reminded", // zamanlayıcı
+  "request.overdue", // zamanlayıcı
+  "file.upload",
+  "sprint.close_begin",
+  "sprint.end_decision",
+  "sprint.close",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number] | (string & {});

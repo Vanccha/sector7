@@ -1,0 +1,24 @@
+.page { display: flex; flex-direction: column; gap: 20px; max-width: 760px; min-width: 0; }
+.section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.h1 { margin: 0; font-size: 24px; line-height: 1.2; overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; color: var(--mut); }
+.desc { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.timer { display: flex; flex-direction: column; gap: 4px; }
+.timerLabel { font-size: 12px; color: var(--mut); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.plain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.msgs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+.msg { padding: 8px 12px; border-left: 3px solid var(--line2); background: var(--bg); font-size: 14px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.msgSystem { border-left-color: var(--ac-tx); color: var(--mut); font-style: italic; }
+.msgHead { display: block; font-size: 12px; color: var(--mut); font-style: normal; margin-bottom: 2px; }
+.item { padding: 10px 12px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.links a { color: var(--ac-tx); overflow-wrap: anywhere; }
+.linkRow { display: flex; gap: 8px; align-items: flex-start; }
+.linkRow .input { flex: 1; min-width: 0; }
+.fileRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chipBtn { min-height: var(--tap); padding: 0 14px; background: transparent; border: 1px solid var(--btn-line); color: var(--ac-tx); font: inherit; cursor: pointer; }
+.chipBtn[aria-pressed="true"] { background: var(--ac-tx); color: var(--bg); }
+.hours { max-width: 140px; }
+.small { font-size: 13px; color: var(--mut); margin: 0; }
