@@ -3,6 +3,7 @@ import type { Actor } from "@/lib/contracts/actor";
 import { rolesOf, ROLE_LABELS } from "@/lib/contracts/actor";
 import type { SprintView } from "@/lib/current-sprint";
 import { BellLink } from "./BellLink";
+import { InstallButton } from "@/components/pwa/InstallButton";
 import { BottomNav } from "./BottomNav";
 import { Brand } from "./Brand";
 import { NavLinks, type NavItem } from "./NavLinks";
@@ -31,6 +32,7 @@ export function AppHeader({ actor, sprint }: { actor: Actor; sprint: SprintView 
         <div className="app-header__top">
           <Brand />
           <div className="app-header__user">
+            <InstallButton variant="header" />
             <BellLink />
             <span className="app-header__who">
               <span style={{ fontWeight: 600 }}>{actor.name}</span>

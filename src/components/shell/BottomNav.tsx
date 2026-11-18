@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { InstallButton } from "@/components/pwa/InstallButton";
 import { formatCount } from "./CountBadge";
 import { useCounts } from "./LiveCounts";
 import { SignOutButton } from "./SignOutButton";
@@ -176,6 +177,7 @@ export function BottomNav({ name, roles, showAreas, isMainAdmin }: Props) {
             >
               Bildirim tercihleri
             </Link>
+            <InstallButton variant="menu" />
             <div className="menu-sheet__out">
               <SignOutButton />
             </div>

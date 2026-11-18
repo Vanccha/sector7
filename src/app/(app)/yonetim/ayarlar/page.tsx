@@ -14,7 +14,7 @@ export default async function SettingsPage() {
     ? new Date(view.updatedAt).toLocaleString("tr-TR", { timeZone: APP_TIMEZONE, dateStyle: "medium", timeStyle: "short" })
     : null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 720 }}>
+    <div className="page page--narrow">
       <h1 className="h-wide" style={{ margin: 0, fontSize: 24 }}>
         Ayarlar
       </h1>

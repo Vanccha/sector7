@@ -10,7 +10,7 @@ export default async function AnnounceAccessPage() {
   const actor = await requirePageMainAdmin();
   const rows = await listAnnounceAccess(db, actor);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 800 }}>
+    <div className="page page--narrow">
       <h1 className="h-wide" style={{ margin: 0, fontSize: 24 }}>
         Duyuru yetkisi
       </h1>

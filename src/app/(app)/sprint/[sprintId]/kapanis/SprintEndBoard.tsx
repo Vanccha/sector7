@@ -7,7 +7,6 @@ import { TICKET_STATUS_LABELS } from "@/lib/contracts/plan";
 import type { SprintEndItem, SprintEndView } from "@/lib/contracts/tickets";
 import { closeSprintAction, decideSprintEndAction } from "./actions";
 
-const list = { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 } as const;
 
 export function SprintEndBoard({ view, isMainAdmin }: { view: SprintEndView; isMainAdmin: boolean }) {
   const { sprint, nextSprint, items, undecidedTotal } = view;
@@ -21,7 +20,7 @@ export function SprintEndBoard({ view, isMainAdmin }: { view: SprintEndView; isM
   const closed = sprint.status === "closed";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 820 }}>
+    <div className="page" style={{ gap: 22 }}>
       <header style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span className="muted" style={{ fontSize: 13 }}>
           Sprint kapanışı
@@ -63,7 +62,7 @@ export function SprintEndBoard({ view, isMainAdmin }: { view: SprintEndView; isM
           <h2 className="h-wide" style={{ margin: 0, fontSize: 18 }}>
             {areaName}
           </h2>
-          <ul style={list}>
+          <ul className="page-grid">
             {rows.map((it) => (
               <li key={it.ticket.id}>
                 <DecisionCard item={it} view={view} />
@@ -78,7 +77,7 @@ export function SprintEndBoard({ view, isMainAdmin }: { view: SprintEndView; isM
           <h2 id="verilen" className="h-wide" style={{ margin: 0, fontSize: 18 }}>
             Karar verilenler
           </h2>
-          <ul style={list}>
+          <ul className="page-grid">
             {decided.map((it) => (
               <li key={it.ticket.id} className="cut-panel" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 4 }}>
                 <span className="chip-title">{it.ticket.title}</span>

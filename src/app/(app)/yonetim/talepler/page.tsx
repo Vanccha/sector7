@@ -14,7 +14,7 @@ export default async function RequestsPage() {
   const late = rows.filter((r) => isUnanswered(r, nowMs));
   const rest = rows.filter((r) => !isUnanswered(r, nowMs));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 800 }}>
+    <div className="page">
       <h1 className="h-wide" style={{ margin: 0, fontSize: 24 }}>
         Talepler
       </h1>

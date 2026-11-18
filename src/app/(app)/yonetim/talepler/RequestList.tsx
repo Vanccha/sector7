@@ -19,7 +19,7 @@ export function isUnanswered(r: OpenRequestRow, nowMs: number): boolean {
 /** Sunucu bileşeni: bekleyen talep satırları. Cevapsızlar vurgulu. */
 export function RequestList({ rows, showArea = true, now }: { rows: OpenRequestRow[]; showArea?: boolean; now: number }) {
   return (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+    <ul className="page-grid">
       {rows.map((r) => {
         const respondMs = Date.parse(r.respondBy) - now;
         const overdue = isUnanswered(r, now);

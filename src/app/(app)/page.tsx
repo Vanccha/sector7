@@ -14,10 +14,12 @@ export default async function HomePage() {
     ? await db.select({ name: areas.name }).from(areas).where(eq(areas.id, actor.homeAreaId)).limit(1)
     : [];
   return (
-    <div className="stack-page" style={{ maxWidth: 640 }}>
+    <div className="page">
       <h1 className="h-wide" style={{ margin: 0, fontSize: 26, lineHeight: 1.2 }}>
         Merhaba, {actor.name.split(" ")[0]}
       </h1>
+      <div className="page-split">
+      <div className="page-split__side">
       <section className="cut-panel" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <h2 className="panel-h">Ana alanın</h2>
         <p style={{ margin: 0 }}>{home?.name ?? <span className="muted">Henüz atanmadı</span>}</p>
@@ -26,14 +28,15 @@ export default async function HomePage() {
         </p>
       </section>
       <SparkRequest initial={view} />
-      <section className="skeleton-stack" aria-labelledby="active-h">
+      </div>
+      <section className="skeleton-stack page-split__main" aria-labelledby="active-h">
         <h2 className="panel-h" id="active-h">
           Üstlendiklerin
         </h2>
         {view.active.length === 0 ? (
           <p className="empty-state">Şu an üstlendiğin bir ticket yok.</p>
         ) : (
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+          <ul className="page-grid">
             {view.active.slice(0, 3).map((t) => (
               <li key={t.id}>
                 <TicketCardItem t={t} />
@@ -49,6 +52,7 @@ export default async function HomePage() {
           Tüm ticket&apos;larım
         </Link>
       </section>
+      </div>
     </div>
   );
 }

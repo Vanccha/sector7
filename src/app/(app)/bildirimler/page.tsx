@@ -11,7 +11,7 @@ export default async function NotificationsPage() {
   const actor = await requirePageActor();
   const initial = await listNotifications(db, actor, {});
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 800 }}>
+    <div className="page page--medium">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <h1 className="h-wide" style={{ margin: 0, fontSize: 24 }}>
           Bildirimler

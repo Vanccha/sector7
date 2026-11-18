@@ -173,3 +173,18 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - **Kurulum daveti:** `beforeinstallprompt` (Chrome/Edge/Android) ya da iOS talimatı; ikinci oturumdan sonra, "Şimdi değil" 14 gün hatırlanır, standalone'da hiç görünmez.
 - **Demo verisi:** `npm run db:demo` (yalnız geliştirme, idempotent, mevcut veriye dokunmaz). Havuzda demo dışı ticket varsa demo çekimleri yalnız demo alanlarından yapılır.
 - **Doğrulama:** ekranlar demo verisiyle 390px (iframe) ve masaüstü genişliğinde tarayıcıda incelendi; mobil başlıkta gün çubuğunun markayla çakışması, duraklı geri sayımın taşması, Windows'ta görünen yatay kaydırma çubuğu ve masaüstündeki yanıltıcı vurgu çizgisi bu incelemede bulunup düzeltildi.
+
+## Aşama 7 — Geliştirici geri bildirimi (2026-11-18)
+
+### Geliştiricinin verdiği kararlar
+- 7.3 canlı çalışma haritası: düğüm şekli **kesik köşeli altıgen** (tek bileşen, şekil değiştirilebilir).
+- 7.5 GitHub kimlik: kullanıcı adı + şifre kalır, profilde "GitHub hesabını bağla"; başvuruda GitHub adı isteğe bağlı, ilk ticket kabulünde bağlama zorunlu.
+- 7.5 GitHub yapı: **alan başına depo**, içinde sprint sprint kategorize (milestone + `sprint-NN` etiketi + `sprint-NN/` klasör ve dal öneki). Ayrıntı `docs/GITHUB-TASARIM.md`.
+
+### 7.1 PWA kurulum düğmesi
+- `beforeinstallprompt` artık modül düzeyinde tek store'da (`src/components/pwa/install-store.ts`, `useInstall()` → `installed | native | ios | unavailable`); hem alttaki davet şeridi hem kalıcı `InstallButton` aynı ertelenen olayı kullanır. Kurulunca ya da standalone'da ikisi de görünmez.
+- Düğme: masaüstünde başlığın sağında, mobilde Menü sayfasında. iOS Safari'de `<dialog>` ile "Paylaş → Ana Ekrana Ekle" yönergesi. İstem desteklemeyen tarayıcıda (masaüstü Safari/Firefox) düğme gizli.
+
+### 7.2 Masaüstü yerleşimi
+- `.app-main` en geniş 1280px, ortalı; başlık içeriği CSS ile aynı kolona hizalanır (markup değişmedi).
+- Sayfa genişliği sistemi `shell.css`: `.page` (tam), `.page--narrow` (720, ortalı; form/ayar), `.page--medium` (860, ortalı; bildirim/konuşma), `.page-grid` (≥721px `auto-fill minmax(320px)`), `.page-split` (≥1024px ana + 300-360px yan; DOM sırası korunur, mobil sırası değişmez). Sayfalardaki inline `maxWidth`'ler kaldırıldı.

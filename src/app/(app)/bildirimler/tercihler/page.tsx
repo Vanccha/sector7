@@ -12,7 +12,7 @@ export default async function PrefsPage() {
   const actor = await requirePageActor();
   const settings = await getNotificationSettings(db, actor);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 800 }}>
+    <div className="page page--narrow">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <h1 className="h-wide" style={{ margin: 0, fontSize: 24 }}>
           Bildirim tercihleri

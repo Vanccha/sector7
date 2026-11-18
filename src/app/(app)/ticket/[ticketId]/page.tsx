@@ -73,6 +73,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
         ) : null}
       </header>
 
+      <div className="page-split">
+      <div className="page-split__main">
       {holderInactive && t.assignee ? (
         <section className={`cut-panel ${styles.section}`} aria-labelledby="reclaim-h">
           <h2 className="panel-h" id="reclaim-h">
@@ -119,6 +121,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
         <ChannelThread view={channelView} ticketChannel />
       </section>
 
+      </div>
+      <div className="page-split__side">
       {pastRequests.length > 0 ? (
         <section className={`cut-panel ${styles.section}`} aria-labelledby="past-h">
           <h2 className="panel-h" id="past-h">
@@ -226,6 +230,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           </ul>
         </section>
       ) : null}
+      </div>
+      </div>
     </div>
   );
 }

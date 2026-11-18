@@ -1,0 +1,153 @@
+.prompt {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--bottom-nav-h, 0px) + env(safe-area-inset-bottom) + 12px);
+  z-index: 60;
+  max-width: 480px;
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  background: var(--panel);
+  color: var(--tx);
+  border: 1px solid var(--edge);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  animation: in 0.25s ease-out;
+}
+.prompt p {
+  margin: 0;
+  flex: 1 1 200px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.yes,
+.no {
+  min-height: var(--tap, 44px);
+  min-width: var(--tap, 44px);
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.yes {
+  background: var(--ac);
+  color: var(--rec-tx);
+  border: 0;
+}
+.no {
+  background: transparent;
+  color: var(--tx);
+  border: 1px solid var(--btn-line);
+}
+.yes:focus-visible,
+.no:focus-visible,
+.btn:focus-visible,
+.menu:focus-visible {
+  outline: 2px solid var(--ac-tx);
+  outline-offset: 2px;
+}
+
+/* Başlık düğmesi (kompakt, kesik köşeli) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.header {
+  min-height: var(--tap, 44px);
+  padding: 0 12px;
+  margin-inline: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--ac-tx);
+  border: 1px solid var(--ac);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  white-space: nowrap;
+}
+.header:hover {
+  border-color: var(--ac-tx);
+  color: var(--ac-hi);
+}
+/* Mobilde yalnız Menü'de görünür */
+@media (max-width: 720px) {
+  .header {
+    display: none;
+  }
+}
+.menu {
+  justify-content: flex-start;
+  color: var(--ac-tx);
+}
+.menu span {
+  flex: 1;
+}
+
+/* iOS yönerge paneli */
+.dialog {
+  padding: 0;
+  margin: auto;
+  width: min(92vw, 400px);
+  background: var(--panel);
+  color: var(--tx);
+  border: 1px solid var(--edge);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  animation: in 0.2s ease-out;
+}
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 18px 16px;
+}
+.dialogTitle {
+  margin: 0;
+  font-size: 18px;
+  font-stretch: 125%;
+}
+.steps {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.shareIcon {
+  display: inline-block;
+  vertical-align: -4px;
+  color: var(--ac-tx);
+}
+.dialogBody .yes {
+  align-self: flex-end;
+}
+
+@keyframes in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompt,
+  .dialog {
+    animation: none;
+  }
+}

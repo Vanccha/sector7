@@ -22,7 +22,7 @@ export default async function SprintClosePage({ params }: { params: Promise<{ sp
     if (e instanceof AppError) {
       if (e.code === "NOT_FOUND") notFound();
       return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 640 }}>
+        <div className="page page--narrow">
           <h1 className="h-wide" style={{ margin: 0, fontSize: 24 }}>
             Sprint kapanışı
           </h1>

@@ -10,7 +10,7 @@
 .app-main {
   flex: 1 1 auto;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1280px; /* 1440'ta kenar boşluğu dengeli kalır; 1200'e göre iki sütunlu panolara ~80px daha yer verir */
   margin: 0 auto;
   min-width: 0;
   padding: 20px calc(var(--gutter) + var(--safe-r)) calc(48px + var(--bottom-nav-h)) calc(var(--gutter) + var(--safe-l));
@@ -43,6 +43,12 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+/* Masaüstü: başlık içeriği ana kolonla hizalanır (arka plan tam genişlikte kalır). Temel kuralın ardından gelmeli; shorthand padding'i ezer. */
+@media (min-width: 721px) {
+  .app-header {
+    padding-inline: max(calc(var(--gutter) + var(--safe-l)), calc((100% - 1280px) / 2 + var(--gutter)));
+  }
 }
 /* Sol alttaki vurgu çizgisi yalnız mobilde: masaüstünde ilk sekmenin altına düşüp aktif sekme gibi görünüyordu. */
 .app-header::after {
@@ -407,4 +413,77 @@
 }
 .nav-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/* ------------------------------------------------------------
+ * Sayfa genişliği sistemi (Aşama 7.2). Mobilde hepsi tek sütun, tam genişlik.
+ *   .page            tam genişlik (.app-main 1280 kapı içinde), dikey akış
+ *   .page--narrow    okuma/form sayfaları, ~720, ortalı
+ *   .page--medium    liste sayfaları, ~860, ortalı
+ *   .page-grid       kart ızgarası (min 320px sütun)
+ *   .page-split      >=1024: ana + yan sütun (.page-split__main / __side)
+ * ------------------------------------------------------------ */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+.page--narrow,
+.page--medium {
+  margin-inline: auto;
+}
+.page--narrow {
+  max-width: 720px;
+}
+.page--medium {
+  max-width: 860px;
+}
+.page-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  align-items: start;
+}
+.page-grid > * {
+  min-width: 0;
+}
+@media (min-width: 721px) {
+  .page-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 16px;
+  }
+}
+.page-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+.page-split__main,
+.page-split__side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .page-split {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    gap: 24px;
+    align-items: start;
+  }
+  .page-split__main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .page-split__side {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }

@@ -9,7 +9,7 @@ export default async function MyTicketsPage() {
   const actor = await requirePageActor();
   const view = await getMyTickets(db, actor);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 960 }}>
+    <div className="page">
       <h1 className="h-wide" style={{ margin: 0, fontSize: 26, lineHeight: 1.2 }}>
         Ticket&apos;larım
       </h1>

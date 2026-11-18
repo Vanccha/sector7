@@ -19,7 +19,7 @@ export default async function MyAreasPage() {
   if (areas.length === 0) redirect("/");
   if (areas.length === 1 && !actor.isMainAdmin && closing.length === 0) redirect(`/alan/${areas[0]!.id}`);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 720 }}>
+    <div className="page">
       <h1 className="h-wide" style={{ margin: 0, fontSize: 24 }}>
         Alanlarım
       </h1>
@@ -33,7 +33,7 @@ export default async function MyAreasPage() {
           {s.name} kapanıyor — kararlarını ver
         </Link>
       ))}
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      <ul className="page-grid">
         {areas.map((a) => (
           <li key={a.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <Link href={`/alan/${a.id}`} className="chip">
