@@ -285,13 +285,15 @@ export const roadmapSteps = pgTable(
 /* ------------------------------------------------------------------ */
 
 /**
- * Ana akış: draft → available → taken → submitted → evaluated.
+ * Ana akış: draft → available → (offered) → taken → submitted → evaluated.
+ * offered: rastgele çekilen ticket kişiye teklif edildi (assigneeId = teklif edilen); kabul edince taken.
  * Yan durumlar: extension_pending, withdrawal_pending (ticket alınmışken talep bekliyor),
  * returned_to_pool (havuza döndü; alınabilirlik açısından available ile aynı), cancelled.
  */
 export const ticketStatus = pgEnum("ticket_status", [
   "draft",
   "available",
+  "offered",
   "taken",
   "submitted",
   "evaluated",
@@ -316,6 +318,8 @@ export const tickets = pgTable(
     description: text("description").notNull().default(""),
     status: ticketStatus("status").notNull().default("draft"),
     assigneeId: uuid("assignee_id").references(() => user.id),
+    /** Teklif anı (status = offered). Teklif OFFER_MINUTES sonra kendiliğinden düşer. */
+    offeredAt: ts("offered_at"),
     takenAt: ts("taken_at"),
     /** Teslim son anı. Geri sayım duraklatıldığında, devam ederken duraklama süresi kadar ileri itilir. */
     dueAt: ts("due_at"),
@@ -377,7 +381,12 @@ export const ticketRejections = pgTable(
 );
 
 export const ticketRequestKind = pgEnum("ticket_request_kind", ["extension", "withdrawal"]);
-export const ticketRequestStatus = pgEnum("ticket_request_status", ["pending", "approved", "rejected"]);
+export const ticketRequestStatus = pgEnum("ticket_request_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "cancelled",
+]);
 
 /** Ek süre ve geri çekme talepleri. Konuşma ticket kanalında yürür; talep otomatik sonuçlanmaz. */
 export const ticketRequests = pgTable(
@@ -400,6 +409,8 @@ export const ticketRequests = pgTable(
     responseNote: text("response_note"),
     /** Yöneticinin cevap vermesi gereken son an. */
     respondBy: ts("respond_by").notNull(),
+    /** Doluysa yönetici soru sordu, talep sahibinin cevabı bekleniyor; bu sırada cevap süresi işlemez. */
+    awaitingRequesterAt: ts("awaiting_requester_at"),
     remindedAt: ts("reminded_at"),
     /** Cevap süresi aşıldığında işaretlenir; ana yönetici panelinde öne çıkar. */
     overdueAt: ts("overdue_at"),
@@ -446,7 +457,11 @@ export const evaluations = pgTable(
     comment: text("comment"),
     createdAt: createdAt(),
   },
-  (t) => [index("evaluations_ticket_idx").on(t.ticketId)],
+  (t) => [
+    index("evaluations_ticket_idx").on(t.ticketId),
+    // Her değerlendirici bir ticket'ı bir kez değerlendirir (sonra güncelleyebilir).
+    uniqueIndex("evaluations_ticket_evaluator_uq").on(t.ticketId, t.evaluatorId),
+  ],
 );
 
 /**

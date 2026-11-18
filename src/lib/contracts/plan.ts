@@ -16,6 +16,7 @@ import { z } from "zod";
 export type TicketStatus =
   | "draft"
   | "available"
+  | "offered"
   | "taken"
   | "submitted"
   | "evaluated"
@@ -34,6 +35,7 @@ export const POOL_STATUSES = ["available", "returned_to_pool"] as const satisfie
 export const ACTIVE_TICKET_STATUSES = [
   "available",
   "returned_to_pool",
+  "offered",
   "taken",
   "extension_pending",
   "withdrawal_pending",
@@ -50,6 +52,7 @@ export const isTicketEditable = (s: TicketStatus) => (TICKET_EDITABLE_STATUSES a
 export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
   draft: "Taslak",
   available: "Havuzda",
+  offered: "Teklif edildi",
   taken: "Alındı",
   submitted: "Teslim edildi",
   evaluated: "Değerlendirildi",
