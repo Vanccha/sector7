@@ -1,0 +1,36 @@
+# bağımlılıklar
+node_modules/
+.pnp
+.pnp.js
+
+# derleme
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ortam ve sırlar
+.env
+.env.*
+!.env.example
+*.pem
+
+# yerel veri
+uploads/
+backups/
+coverage/
+
+# günlükler
+npm-debug.log*
+*.log
+
+# işletim sistemi / editör
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude yerel ayarları
+.claude/settings.local.json

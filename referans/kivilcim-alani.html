@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kıvılcım Alanı | Allspark</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@50..125,100..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070915}
+a{color:#9097C0;text-decoration:none}a:hover{color:#E8E9F3}
+.ks{--bg:#070915;--panel:#0E1230;--panel2:#141A44;--line:#161C48;--line2:#1C2358;--tx:#E8E9F3;--tx2:#C9CCE4;--mut:#9097C0;--ac:#2B3FD1;--ac2:#3A4CE0;--ac-tx:#7D8CFF;--ac-hi:#A3AEFF;--edge:#1E2B93;--sel:#1A2370;--tri:#0B0F28;--btn-line:#2A3270;--hot-tx:#FF5A4E;--hot:#D21F14;--hot-hi:#FF6A5F;--rec:#D21F14;--mk1:#2B3FD1;--mk2:#D21F14;transition:background-color .5s}
+.ks.th-amber{--bg:#111214;--panel:#1C1D21;--panel2:#24262B;--line:#2A2B2E;--line2:#33353A;--tx:#ECE8DC;--tx2:#DCD8CB;--mut:#A9A69C;--ac:#C77700;--ac2:#E08A00;--ac-tx:#FFB547;--ac-hi:#FFD08A;--edge:#6B4A12;--sel:#3A2C12;--tri:#141310;--btn-line:#45474D;--rec:#C77700;--mk1:#FFB547;--mk2:#FF4033}
+.ks.th-red{--bg:#111214;--panel:#1C1D21;--panel2:#24262B;--line:#2A2B2E;--line2:#33353A;--tx:#ECE8DC;--tx2:#DCD8CB;--mut:#A9A69C;--ac:#B3170E;--ac2:#D21F14;--ac-tx:#FF6A5C;--ac-hi:#FFB3AA;--edge:#6E1410;--sel:#3A1412;--tri:#140F0F;--btn-line:#45474D;--hot-tx:#FFD34D;--hot:#F2B705;--hot-hi:#FFD34D;--rec:#F2B705;--mk1:#FF4033;--mk2:#7A0E09}
+.ks a{color:var(--mut);text-decoration:none}.ks a:hover{color:var(--tx)}
+.ks *{box-sizing:border-box}
+.ks button{font:inherit;color:inherit}
+.wordmark{font-stretch:125%;font-weight:800;font-size:19px;letter-spacing:.16em}
+.h-wide{font-stretch:125%;font-weight:700}
+.muted{color:var(--mut)}
+.panel-h{font-size:15px;font-weight:600;font-stretch:112%;margin:0;color:var(--tx)}
+.count{font-stretch:125%;font-weight:700;color:var(--ac-tx);font-size:15px;font-variant-numeric:tabular-nums}
+.nav a{padding:10px 2px;border-bottom:2px solid transparent;font-size:15px}
+.nav a[aria-current="page"]{color:var(--tx);border-bottom-color:var(--hot)}
+.lamp{width:11px;height:11px;border-radius:50%;background:var(--line);box-shadow:inset 0 0 0 1px var(--line2)}
+.lamp.is-g{background:#4BD27A;box-shadow:0 0 10px #4BD27A}
+.lamp.is-y{background:#F2B705;box-shadow:0 0 10px #F2B705;animation:blinkL 1.4s steps(2) infinite}
+.lamp.is-r{background:#FF4033;box-shadow:0 0 12px #FF4033;animation:blinkL .7s steps(2) infinite}
+.days{display:inline-flex;align-items:center;touch-action:none;user-select:none}
+.dy{position:relative;width:11px;height:30px;padding:0;border:0;background:transparent;cursor:pointer}
+.dy::before{content:"";position:absolute;left:2px;right:2px;top:7px;bottom:7px;background:var(--line2);transition:background .2s,top .2s,bottom .2s}
+.dy:hover::before{background:var(--mut);top:4px;bottom:4px}
+.dy:focus-visible{outline:2px solid var(--ac-tx);outline-offset:1px}
+.dy.wk{margin-left:6px}
+.dy.is-g::before{background:#4BD27A}
+.dy.is-y::before{background:#F2B705}
+.dy.is-r::before{background:#FF4033}
+.dy.is-now::before{top:2px;bottom:2px;box-shadow:0 0 10px var(--ac-tx);animation:blinkL 1.4s steps(2) infinite}
+
+.chip{position:relative;display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:14px 18px 14px 16px;border:0;background:none;cursor:pointer;max-height:220px;transition:transform .28s cubic-bezier(.2,.9,.1,1)}
+.chip-bg{position:absolute;inset:0;background:var(--panel);clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));transition:background .3s;z-index:0}
+.chip-row,.chip-title,.chip-hours{position:relative;z-index:1}
+.chip:hover .chip-bg{background:var(--panel2)}
+.chip:focus-visible{outline:2px solid var(--ac-tx);outline-offset:3px}
+.chip.is-charged{transform:translateX(10px)}
+.chip.is-charged .chip-bg{background:var(--sel)}
+.chip.is-charged::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:2px;z-index:2;background:linear-gradient(90deg,transparent 0,var(--hot-tx) 40%,#FFFFFF 50%,var(--hot-tx) 60%,transparent 100%);background-size:220% 100%;animation:current .85s linear infinite}
+.chip.is-leaving{animation:leave .24s cubic-bezier(.5,0,.75,0) forwards;pointer-events:none}
+.chip-row{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--mut)}
+.chip-urgent{color:var(--hot-tx);display:inline-flex;gap:6px;align-items:center;font-weight:600}
+.chip-urgent::before{content:"";width:9px;height:8px;background:var(--hot-tx);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.chip-title{font-size:15px;line-height:1.35;font-weight:500;color:var(--tx)}
+.chip-hours{font-size:13px;font-stretch:125%;font-weight:600;color:var(--ac-tx)}
+
+.hint{margin:0;font-size:15px;color:var(--mut);min-height:22px;max-width:62ch}
+.node{position:absolute;transform:translate(-50%,-49px);display:flex;flex-direction:column;align-items:center;gap:10px;background:none;border:0;padding:0;cursor:pointer;width:156px;z-index:2}
+.node:focus-visible{outline:2px solid var(--ac-tx);outline-offset:6px}
+.tri-wrap{position:relative;display:block;width:112px;height:98px}
+.tri-edge,.tri-body{position:absolute;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.tri-edge{inset:0;background:var(--edge);transition:background .25s}
+.tri-body{inset:5px 6px 2px 6px;background:var(--tri);overflow:hidden}
+.fill{position:absolute;left:0;right:0;bottom:0;transition:height .75s cubic-bezier(.2,.9,.1,1),background .4s}
+.ghost{position:absolute;left:0;right:0;bottom:0;background:repeating-linear-gradient(-55deg,var(--ac-tx) 0 3px,transparent 3px 8px);transition:height .35s cubic-bezier(.2,.9,.1,1);animation:breathe 1.1s ease-in-out infinite alternate}
+.ghost--over{background:repeating-linear-gradient(-55deg,var(--hot-tx) 0 3px,transparent 3px 8px)}
+.initials{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-stretch:125%;font-weight:700;font-size:14px;letter-spacing:.06em}
+.node.is-target .tri-edge{background:var(--ac2)}
+.node.is-target:hover .tri-edge{background:var(--ac-hi)}
+.node .tri-edge.tri-edge--over{background:var(--hot)}
+.node.is-target:hover .tri-edge.tri-edge--over{background:var(--hot-hi)}
+.node.is-focus .tri-edge{background:var(--tx)}
+.node.is-struck .tri-wrap{animation:strike .6s cubic-bezier(.2,.9,.1,1)}
+.node.is-struck .tri-edge{animation:flash .6s ease-out}
+.node-meta{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.rec{font-size:12px;font-weight:600;color:#FFFFFF;background:var(--rec);padding:2px 10px;margin-bottom:4px;clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);animation:pop .3s cubic-bezier(.2,.9,.1,1)}
+.ks.th-red .rec{color:#111214}
+.node-name{font-size:15px;font-weight:600;color:var(--tx)}
+.node-role{font-size:13px;color:var(--mut)}
+.node-load{font-size:13px;color:var(--ac-tx);font-variant-numeric:tabular-nums}
+.node-load--hot{color:var(--hot-tx)}
+.node-load--over{color:var(--hot-tx);font-weight:600}
+.edges .edge-outer{transition:stroke .3s}
+.edges.is-live .edge-outer{stroke:var(--ac2) !important;stroke-dasharray:3 9;animation:flow 1s linear infinite}
+
+.bar{display:block;height:6px;background:var(--panel2);position:relative;overflow:hidden}
+.bar-in{display:block;height:100%;transition:width .7s cubic-bezier(.2,.9,.1,1),background .4s}
+.trow{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--panel2);padding:12px 0;cursor:pointer;min-height:44px}
+.trow:hover .trow-name{color:#FFFFFF}
+.trow:focus-visible{outline:2px solid var(--ac-tx);outline-offset:2px}
+.trow-top{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.trow-name{color:var(--tx2)}
+.ftasks{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-direction:column}
+.ftask{display:flex;justify-content:space-between;gap:12px;padding:11px 8px 11px 0;border-bottom:1px solid var(--panel2);font-size:14px;line-height:1.35}
+.ftask.is-fresh{animation:arrive 1s cubic-bezier(.2,.9,.1,1)}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.log li{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;font-size:14px;line-height:1.35;animation:arrive 1s cubic-bezier(.2,.9,.1,1)}
+.log-who{color:var(--hot-tx);font-weight:600}
+.btn-line{background:none;border:1px solid var(--btn-line);color:var(--tx);padding:10px 16px;font-size:14px;cursor:pointer;min-height:44px}
+.btn-line:hover{border-color:var(--ac-tx)}
+.btn-line:focus-visible,.btn-solid:focus-visible{outline:2px solid var(--ac-tx);outline-offset:3px}
+.btn-solid{background:var(--ac);border:0;color:#FFFFFF;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;min-height:44px}
+.btn-solid:hover{background:var(--ac2)}
+
+@keyframes current{from{background-position:220% 0}to{background-position:0 0}}
+@keyframes leave{to{opacity:0;transform:translateX(70px);max-height:0;padding-top:0;padding-bottom:0}}
+@keyframes breathe{from{opacity:.4}to{opacity:1}}
+@keyframes strike{0%{transform:scale(1)}18%{transform:scale(1.13) rotate(-2deg)}42%{transform:scale(.96)}100%{transform:scale(1)}}
+@keyframes flash{0%,22%{background:#FFFFFF}100%{background:var(--edge)}}
+@keyframes flow{to{stroke-dashoffset:-24}}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes arrive{0%{background:var(--sel);transform:translateX(-12px)}100%{background:transparent;transform:none}}
+@keyframes blinkL{50%{opacity:.3}}
+@keyframes themeFlash{0%{filter:brightness(1.8) saturate(1.4)}100%{filter:none}}
+.ks.is-switch{animation:themeFlash .5s ease-out}
+@media (prefers-reduced-motion: reduce){.ks *,.ks *::after,.ks *::before{animation:none !important;transition:none !important}}
+</style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<template id="view">
+<div class="{{rootCls}}" style="min-height: 900px; background: var(--bg); color: var(--tx); font-family: 'Saira', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; padding: 18px 32px; border-bottom: 1px solid var(--line)">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <svg width="40" height="30" viewBox="0 0 100 76" aria-hidden="true">
+        <polygon points="40,6 52,6 84,74 70,74 46,24 34,48 20,48" style="fill: var(--mk1)"></polygon>
+        <polygon points="56,0 66,0 100,74 90,74" style="fill: var(--mk2)"></polygon>
+        <polygon points="22,48 34,48 24,70 4,70 8,62 18,62" style="fill: var(--tx)"></polygon>
+      </svg>
+      <span class="wordmark">ALLSPARK</span>
+    </div>
+    <nav class="nav" aria-label="Ana gezinme" style="display: flex; gap: 28px">
+      <a href="#dagitim" aria-current="page">Dağıtım</a>
+      <a href="#sprint">Sprint</a>
+      <a href="#ekip">Ekip</a>
+    </nav>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; font-size: 14px">
+      <span style="display: inline-flex; align-items: center; gap: 7px">
+        <span class="{{lampG}}" aria-hidden="true"></span><span class="{{lampY}}" aria-hidden="true"></span><span class="{{lampR}}" aria-hidden="true"></span>
+        <span style="margin-left: 4px">Hazırlık durumu: <strong>{{levelName}}</strong></span>
+      </span>
+      <span class="days" role="group" aria-label="{{dayAria}}">
+        <sc-for list="{{days}}" as="dy" hint-placeholder-count="21"><button class="{{dy.cls}}" onClick="{{dy.pick}}" onPointerDown="{{dy.pick}}" onPointerEnter="{{dy.drag}}" aria-label="{{dy.label}}" aria-pressed="{{dy.cur}}"></button></sc-for>
+      </span>
+      <span class="muted">{{sprintName}}, gün {{sprintDay}} / 21, {{daysLeft}} gün kaldı</span>
+      <sc-if value="{{dayManual}}" hint-placeholder-val="{{false}}"><button class="btn-line" style="min-height: 34px; padding: 4px 12px" onClick="{{dayAuto}}">Bugüne dön</button></sc-if>
+      <span>Ekip yükü <span class="count">{{teamLoad}}</span></span>
+    </div>
+  </header>
+
+  <div ref="{{setMain}}" style="position: relative; flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: stretch">
+    <aside style="flex: 1 1 280px; padding: 28px 22px 28px 28px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+        <h2 class="panel-h">Bekleyen işler</h2>
+        <span class="count">{{pendingCount}}</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{tasks}}" as="t" hint-placeholder-count="6">
+          <button class="{{t.cls}}" onClick="{{t.pick}}" ref="{{t.setRef}}" aria-pressed="{{t.pressed}}">
+            <span class="chip-bg" aria-hidden="true"></span>
+            <span class="chip-row">
+              <span>{{t.tag}}</span>
+              <sc-if value="{{t.urgent}}" hint-placeholder-val="{{false}}"><span class="chip-urgent">acil</span></sc-if>
+            </span>
+            <span class="chip-title">{{t.title}}</span>
+            <span class="chip-hours">{{t.hoursLabel}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{hasSel}}" hint-placeholder-val="{{false}}">
+        <button class="btn-line" onClick="{{cancel}}">Seçimi bırak</button>
+      </sc-if>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; flex-direction: column; gap: 14px; padding: 20px 0">
+          <p style="margin: 0; font-size: 15px; line-height: 1.45" class="muted">Bekleyen iş kalmadı. Yeni işler sprint planından buraya düşer.</p>
+          <button class="btn-solid" onClick="{{reset}}">Örnek işleri geri yükle</button>
+        </div>
+      </sc-if>
+    </aside>
+
+    <section style="flex: 999 1 560px; min-width: 0; position: relative; padding: 28px 32px; display: flex; flex-direction: column; gap: 8px">
+      <p class="hint" aria-live="polite">{{hint}}</p>
+      <div style="position: relative; width: 100%; max-width: 840px; height: 660px; margin: 0 auto">
+        <svg class="{{edgeCls}}" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible">
+          <polygon class="edge-outer" points="50,10 10,80 90,80" fill="none" style="stroke: var(--edge)" stroke-width="1.5" vector-effect="non-scaling-stroke"></polygon>
+          <polygon points="30,45 70,45 50,80" fill="none" style="stroke: var(--line2)" stroke-width="1" stroke-dasharray="2 7" vector-effect="non-scaling-stroke"></polygon>
+        </svg>
+        <sc-for list="{{members}}" as="m" hint-placeholder-count="6">
+          <button class="{{m.cls}}" style="left: {{m.x}}%; top: {{m.y}}%" onClick="{{m.click}}" aria-label="{{m.aria}}">
+            <span class="tri-wrap" ref="{{m.setRef}}">
+              <span class="tri-edge {{m.edgeCls}}"></span>
+              <span class="tri-body">
+                <span class="{{m.ghostCls}}" style="height: {{m.ghostPct}}%"></span>
+                <span class="fill" style="height: {{m.fillPct}}%; background: {{m.fillColor}}"></span>
+                <span class="initials" style="color: {{m.iniColor}}">{{m.initials}}</span>
+              </span>
+            </span>
+            <span class="node-meta">
+              <sc-if value="{{m.recommended}}" hint-placeholder-val="{{false}}"><span class="rec">Önerilen</span></sc-if>
+              <span class="node-name">{{m.name}}</span>
+              <span class="node-role">{{m.role}}</span>
+              <span class="{{m.loadCls}}">{{m.loadLabel}}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <aside style="flex: 1 1 300px; padding: 28px 28px 28px 24px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 36px">
+      <sc-if value="{{hasFocus}}" hint-placeholder-val="{{false}}">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+            <div>
+              <h2 class="h-wide" style="margin: 0; font-size: 21px; line-height: 1.2">{{fm.name}}</h2>
+              <p class="muted" style="margin: 4px 0 0; font-size: 14px">{{fm.role}}</p>
+            </div>
+            <button class="btn-line" onClick="{{clearFocus}}">Ekibe dön</button>
+          </div>
+          <p style="margin: 22px 0 10px; display: flex; align-items: baseline; gap: 8px">
+            <span class="h-wide" style="font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums">{{fm.load}}</span>
+            <span class="muted" style="font-size: 15px">/ {{fm.cap}} saat</span>
+          </p>
+          <span class="bar"><span class="bar-in" style="width: {{fm.pct}}%; background: {{fm.color}}"></span></span>
+          <ul class="ftasks">
+            <sc-for list="{{focusTasks}}" as="ft" hint-placeholder-count="2">
+              <li class="{{ft.cls}}"><span>{{ft.t}}</span><span class="muted" style="white-space: nowrap">{{ft.h}}</span></li>
+            </sc-for>
+          </ul>
+        </div>
+      </sc-if>
+      <sc-if value="{{noFocus}}" hint-placeholder-val="{{true}}">
+        <div>
+          <h2 class="panel-h" style="margin-bottom: 6px">Ekip yükü</h2>
+          <sc-for list="{{teamRows}}" as="r" hint-placeholder-count="6">
+            <button class="trow" onClick="{{r.click}}">
+              <span class="trow-top"><span class="trow-name">{{r.name}}</span><span class="muted" style="font-variant-numeric: tabular-nums">{{r.label}}</span></span>
+              <span class="bar"><span class="bar-in" style="width: {{r.pct}}%; background: {{r.color}}"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div>
+        <h2 class="panel-h" style="margin-bottom: 14px">Son dağıtımlar</h2>
+        <sc-if value="{{hasLog}}" hint-placeholder-val="{{false}}">
+          <ol class="log">
+            <sc-for list="{{log}}" as="e" hint-placeholder-count="2">
+              <li><span class="log-who">{{e.who}}</span><span>{{e.text}}</span><span class="muted" style="white-space: nowrap">{{e.h}}</span></li>
+            </sc-for>
+          </ol>
+        </sc-if>
+        <sc-if value="{{noLog}}" hint-placeholder-val="{{true}}">
+          <p class="muted" style="margin: 0; font-size: 14px; line-height: 1.45">Bu oturumda henüz dağıtım yapılmadı.</p>
+        </sc-if>
+      </div>
+    </aside>
+
+    <canvas ref="{{setCanvas}}" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5"></canvas>
+  </div>
+</div>
+</template>
+<script>
+/* ------------------------------------------------------------------
+   Şablon çalıştırıcı
+   Sayfadaki <template id="view"> işaretlemesini React öğelerine çevirir.
+   Desteklenenler: {{yol}} boşlukları, <sc-for list as>, <sc-if value>,
+   onClick gibi olaylar, ref, class/style ve SVG nitelikleri.
+------------------------------------------------------------------- */
+(function () {
+  const h = React.createElement;
+  const Frag = React.Fragment;
+  const HOLE = /\{\{\s*([^}]+?)\s*\}\}/g;
+  const ONLY = /^\{\{\s*([^}]+?)\s*\}\}$/;
+  const EVENTS = {
+    onclick: 'onClick', onpointermove: 'onPointerMove', onpointerleave: 'onPointerLeave',
+    onpointerenter: 'onPointerEnter', onpointerdown: 'onPointerDown', onpointerup: 'onPointerUp',
+    onfocus: 'onFocus', onblur: 'onBlur', onchange: 'onChange', oninput: 'onInput',
+    onkeydown: 'onKeyDown', onkeyup: 'onKeyUp', onsubmit: 'onSubmit',
+    onmouseenter: 'onMouseEnter', onmouseleave: 'onMouseLeave'
+  };
+  const RENAME = {
+    class: 'className', for: 'htmlFor', tabindex: 'tabIndex', autocomplete: 'autoComplete',
+    spellcheck: 'spellCheck', readonly: 'readOnly', maxlength: 'maxLength', crossorigin: 'crossOrigin'
+  };
+  const camel = (s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+
+  function lookup(expr, scopes) {
+    const e = expr.trim();
+    if (e === 'true') return true;
+    if (e === 'false') return false;
+    if (e === 'null') return null;
+    if (/^-?\d+(\.\d+)?$/.test(e)) return parseFloat(e);
+    if (/^'.*'$|^".*"$/.test(e)) return e.slice(1, -1);
+    const parts = e.split('.');
+    let cur;
+    let found = false;
+    for (let i = scopes.length - 1; i >= 0; i--) {
+      const sc = scopes[i];
+      if (sc && Object.prototype.hasOwnProperty.call(sc, parts[0])) { cur = sc[parts[0]]; found = true; break; }
+    }
+    if (!found) return undefined;
+    for (let i = 1; i < parts.length; i++) {
+      if (cur == null) return undefined;
+      cur = cur[parts[i]];
+    }
+    return cur;
+  }
+
+  function compileValue(raw) {
+    const m = raw.match(ONLY);
+    if (m) return { raw: true, expr: m[1] };
+    if (raw.indexOf('{{') === -1) return { lit: raw };
+    const pieces = [];
+    let last = 0;
+    raw.replace(HOLE, (all, expr, idx) => {
+      pieces.push(raw.slice(last, idx));
+      pieces.push({ expr: expr });
+      last = idx + all.length;
+      return all;
+    });
+    pieces.push(raw.slice(last));
+    return { parts: pieces };
+  }
+
+  function evalValue(v, scopes) {
+    if ('lit' in v) return v.lit;
+    if (v.raw) return lookup(v.expr, scopes);
+    return v.parts.map((p) => {
+      if (typeof p === 'string') return p;
+      const x = lookup(p.expr, scopes);
+      return x == null ? '' : String(x);
+    }).join('');
+  }
+
+  function parseStyle(str) {
+    const out = {};
+    let depth = 0, buf = '';
+    const decls = [];
+    for (const ch of String(str)) {
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === ';' && depth === 0) { decls.push(buf); buf = ''; } else buf += ch;
+    }
+    decls.push(buf);
+    decls.forEach((d) => {
+      const i = d.indexOf(':');
+      if (i < 0) return;
+      const k = d.slice(0, i).trim();
+      const val = d.slice(i + 1).trim();
+      if (!k) return;
+      out[k.indexOf('--') === 0 ? k : camel(k)] = val;
+    });
+    return out;
+  }
+
+  function compile(node) {
+    if (node.nodeType === 3) {
+      const t = node.nodeValue;
+      if (/^\s*$/.test(t) && t.indexOf('\n') >= 0) return null;
+      return { kind: 'text', val: compileValue(t) };
+    }
+    if (node.nodeType !== 1) return null;
+    const tag = node.localName;
+    const kids = [];
+    const src = tag === 'template' ? node.content.childNodes : node.childNodes;
+    for (const c of src) { const k = compile(c); if (k) kids.push(k); }
+    if (tag === 'sc-for') return { kind: 'for', list: compileValue(node.getAttribute('list') || ''), as: node.getAttribute('as') || 'item', kids: kids };
+    if (tag === 'sc-if') return { kind: 'if', cond: compileValue(node.getAttribute('value') || ''), kids: kids };
+    if (tag === 'helmet') return null;
+    const attrs = [];
+    for (const a of node.attributes) {
+      if (a.name.indexOf('hint-') === 0) continue;
+      attrs.push({ name: a.name, val: compileValue(a.value) });
+    }
+    return { kind: 'el', tag: tag, svg: node.namespaceURI === 'http://www.w3.org/2000/svg', attrs: attrs, kids: kids };
+  }
+
+  function render(n, scopes, key) {
+    if (n.kind === 'text') { const v = evalValue(n.val, scopes); return v == null ? '' : v; }
+    if (n.kind === 'if') {
+      if (!evalValue(n.cond, scopes)) return null;
+      return h(Frag, key == null ? null : { key: key }, ...n.kids.map((k) => render(k, scopes)));
+    }
+    if (n.kind === 'for') {
+      const list = evalValue(n.list, scopes) || [];
+      return h(Frag, key == null ? null : { key: key }, list.map((item, i) => {
+        const sc = {}; sc[n.as] = item; sc.$index = i;
+        return h(Frag, { key: i }, ...n.kids.map((k) => render(k, scopes.concat([sc]))));
+      }));
+    }
+    const props = key == null ? {} : { key: key };
+    for (const a of n.attrs) {
+      let name = a.name;
+      let val = evalValue(a.val, scopes);
+      if (EVENTS[name]) { name = EVENTS[name]; if (typeof val !== 'function') continue; }
+      else if (name === 'ref') { if (typeof val !== 'function') continue; }
+      else if (name === 'style') { val = parseStyle(val); }
+      else if (RENAME[name]) name = RENAME[name];
+      else if (name.indexOf('aria-') !== 0 && name.indexOf('data-') !== 0 && name.indexOf('-') > 0) name = camel(name);
+      props[name] = val;
+    }
+    return h(n.tag, props, ...n.kids.map((k) => render(k, scopes)));
+  }
+
+  let compiled = null;
+  function view(vals) {
+    if (!compiled) compiled = compile(document.getElementById('view'));
+    const extra = { sprintName: ALLSPARK.sprintName() };
+    return h(Frag, null, ...compiled.kids.map((k) => render(k, [extra, vals])));
+  }
+
+  window.DCLogic = class DCLogic extends React.Component {
+    render() { return view(this.renderVals()); }
+  };
+
+  window.mountView = function (Component, props) {
+    ReactDOM.createRoot(document.getElementById('app')).render(h(Component, props));
+  };
+})();
+/* ------------------------------------------------------------------
+   Veri katmanı
+   API adresi config.js içindeki window.ALLSPARK_API_URL'den okunur.
+   Adres boşsa sayfa aşağıdaki örnek veriyle çalışır.
+   Sözleşmenin ayrıntısı README.md dosyasında.
+------------------------------------------------------------------- */
+const SAMPLE = {
+  sprint: { id: 'sprint-14', name: 'Sprint 14', startDate: '2026-11-08', lengthDays: 21 },
+  members: [
+    { id: 'deniz', name: 'Deniz Aksoy', initials: 'DA', role: 'Backend', capacityHours: 32, skills: ['api'] },
+    { id: 'mert', name: 'Mert Sezer', initials: 'MS', role: 'Veri', capacityHours: 30, skills: ['veri', 'api'] },
+    { id: 'ece', name: 'Ece Tunalı', initials: 'ET', role: 'Frontend', capacityHours: 30, skills: ['arayüz'] },
+    { id: 'kaan', name: 'Kaan Yener', initials: 'KY', role: 'DevOps', capacityHours: 28, skills: ['altyapı'] },
+    { id: 'baris', name: 'Barış Kılıç', initials: 'BK', role: 'Test', capacityHours: 26, skills: ['test'] },
+    { id: 'selin', name: 'Selin Oral', initials: 'SO', role: 'Mobil', capacityHours: 30, skills: ['mobil', 'arayüz'] }
+  ],
+  tasks: [
+    { id: 't1', title: 'Ödeme servisine idempotency anahtarı', hours: 6, tag: 'api', urgent: true, status: 'todo', assigneeId: null },
+    { id: 't2', title: 'Bildirim kuyruğunu Redis Streams’e taşı', hours: 10, tag: 'api', urgent: false, status: 'todo', assigneeId: null },
+    { id: 't3', title: 'Onboarding ekranı geçişleri', hours: 5, tag: 'arayüz', urgent: false, status: 'todo', assigneeId: null },
+    { id: 't4', title: 'CI süresini 12 dakikanın altına indir', hours: 8, tag: 'altyapı', urgent: true, status: 'todo', assigneeId: null },
+    { id: 't5', title: 'iOS push sertifikasını yenile', hours: 2, tag: 'mobil', urgent: true, status: 'todo', assigneeId: null },
+    { id: 't6', title: 'Kampanya raporu için ETL hattı', hours: 9, tag: 'veri', urgent: false, status: 'todo', assigneeId: null },
+    { id: 't7', title: 'Giriş sayfası hız sınırı testleri', hours: 4, tag: 'test', urgent: false, status: 'todo', assigneeId: null },
+    { id: 'a1', title: 'Sipariş API’sinde sayfalama', hours: 8, tag: 'api', urgent: false, status: 'in_progress', assigneeId: 'deniz' },
+    { id: 'a2', title: 'Yetki servisi refaktörü', hours: 14, tag: 'api', urgent: false, status: 'todo', assigneeId: 'deniz' },
+    { id: 'a3', title: 'Kohort analizi sorguları', hours: 10, tag: 'veri', urgent: false, status: 'done', assigneeId: 'mert' },
+    { id: 'a4', title: 'Veri ambarı maliyet raporu', hours: 8, tag: 'veri', urgent: false, status: 'in_progress', assigneeId: 'mert' },
+    { id: 'a5', title: 'Tasarım sistemi buton seti', hours: 7, tag: 'arayüz', urgent: false, status: 'review', assigneeId: 'ece' },
+    { id: 'a6', title: 'Panel tablosunda sanallaştırma', hours: 5, tag: 'arayüz', urgent: false, status: 'in_progress', assigneeId: 'ece' },
+    { id: 'a7', title: 'Staging ortamı için Terraform', hours: 16, tag: 'altyapı', urgent: false, status: 'done', assigneeId: 'kaan' },
+    { id: 'a8', title: 'Log saklama politikası', hours: 9, tag: 'altyapı', urgent: false, status: 'todo', assigneeId: 'kaan' },
+    { id: 'a9', title: 'Ödeme akışı uçtan uca testleri', hours: 14, tag: 'test', urgent: false, status: 'in_progress', assigneeId: 'baris' },
+    { id: 'a10', title: 'Android derin bağlantılar', hours: 9, tag: 'mobil', urgent: false, status: 'review', assigneeId: 'selin' }
+  ]
+};
+
+const API = {
+  get BASE_URL() { return String(window.ALLSPARK_API_URL || '').replace(/\/+$/, ''); },
+  async request(method, path, body) {
+    const res = await fetch(this.BASE_URL + path, {
+      method: method,
+      headers: Object.assign({ 'Content-Type': 'application/json' }, window.ALLSPARK_API_HEADERS || {}),
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(method + ' ' + path + ' → ' + res.status);
+    return res.status === 204 ? null : res.json();
+  },
+  /** Aktif sprint, ekip ve işler. */
+  load() { return this.BASE_URL ? this.request('GET', '/sprint/current') : Promise.resolve(SAMPLE); },
+  /** İşi bir kişiye atar; memberId null ise atamayı kaldırır. */
+  assign(taskId, memberId) { return this.BASE_URL ? this.request('PATCH', '/tasks/' + encodeURIComponent(taskId), { assigneeId: memberId }) : Promise.resolve(null); },
+  /** İşin durumunu değiştirir: todo, in_progress, review, done. */
+  updateStatus(taskId, status) { return this.BASE_URL ? this.request('PATCH', '/tasks/' + encodeURIComponent(taskId), { status: status }) : Promise.resolve(null); },
+  /** Yeni iş oluşturur; sunucu oluşturulan işi döndürür. */
+  createTask(task) { return this.BASE_URL ? this.request('POST', '/tasks', task) : Promise.resolve(null); },
+  /** İşi siler. */
+  deleteTask(taskId) { return this.BASE_URL ? this.request('DELETE', '/tasks/' + encodeURIComponent(taskId)) : Promise.resolve(null); }
+};
+
+/** Sunucu verisini ekranların kullandığı biçime çevirir. */
+const ALLSPARK = {
+  data: SAMPLE,
+  initialsOf(name) { return String(name).split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p.charAt(0).toLocaleUpperCase('tr')).join(''); },
+  team() {
+    return this.data.members.map((m) => ({
+      id: m.id, name: m.name, initials: m.initials || this.initialsOf(m.name), role: m.role || '',
+      cap: Number(m.capacityHours) || 1, skills: m.skills || []
+    }));
+  },
+  tasks() { return this.data.tasks.slice(); },
+  /** Atanmamış işler ve kişi başına atanmış işler. */
+  split() {
+    const assigned = {};
+    this.data.members.forEach((m) => { assigned[m.id] = []; });
+    const pending = [];
+    this.data.tasks.forEach((t) => {
+      if (t.assigneeId && assigned[t.assigneeId]) assigned[t.assigneeId].push({ id: t.id, t: t.title, h: Number(t.hours) || 0 });
+      else if (!t.assigneeId) pending.push({ id: t.id, title: t.title, hours: Number(t.hours) || 0, tag: t.tag || '', urgent: !!t.urgent });
+    });
+    return { pending: pending, assigned: assigned };
+  },
+  sprintStart() { return (this.data.sprint && this.data.sprint.startDate) || ''; },
+  sprintName() { return (this.data.sprint && this.data.sprint.name) || 'Sprint'; },
+  report(what) { return (err) => console.warn('Allspark: ' + what + ' sunucuya iletilemedi.', err); }
+};
+
+function boot(Component, props) {
+  API.load()
+    .then((d) => { if (d && d.members && d.tasks) ALLSPARK.data = d; })
+    .catch((err) => console.warn('Allspark: sunucudan veri alınamadı, örnek veri kullanılıyor.', err))
+    .then(() => {
+      const p = Object.assign({}, props);
+      if ('sprintStart' in p && ALLSPARK.sprintStart()) p.sprintStart = ALLSPARK.sprintStart();
+      mountView(Component, p);
+    });
+}
+/* ------------------------------------------------------------------
+   Ekran: Kıvılcım Alanı
+------------------------------------------------------------------- */
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.nodeEls = {};
+    this.taskEls = {};
+    this.fx = [];
+    this.raf = 0;
+    this.timers = [];
+    this.tick = this.tick.bind(this);
+    this.state = this.seed();
+    this.state.dayPick = null;
+    this.state.switching = false;
+  }
+
+  team() {
+    const P = [[50, 10], [30, 45], [70, 45], [10, 80], [50, 80], [90, 80]];
+    return ALLSPARK.team().map((m, i) => Object.assign(m, { x: (P[i] || [12 + ((i - 6) * 19) % 80, 96])[0], y: (P[i] || [0, 96])[1] }));
+  }
+
+  seed() {
+    const d = ALLSPARK.split();
+    return { pending: d.pending, assigned: d.assigned, selected: null, focus: null, leaving: null, struck: null, log: [] };
+  }
+
+  themeOf(day) { return day <= 7 ? 'blue' : (day <= 14 ? 'amber' : 'red'); }
+
+  autoDay() {
+    const o = parseInt(this.props.sprintDay, 10);
+    if (o >= 1 && o <= 21) return o;
+    const raw = String(this.props.sprintStart || '2026-11-08').trim();
+    const m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) return 1;
+    const start = new Date(+m[1], +m[2] - 1, +m[3]);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.max(1, Math.min(21, Math.floor((today - start) / 86400000) + 1));
+  }
+
+  sprintDay() {
+    const p = this.state.dayPick;
+    return p >= 1 && p <= 21 ? p : this.autoDay();
+  }
+
+  pickDay(d) {
+    const cur = this.sprintDay();
+    const next = d == null ? this.autoDay() : d;
+    if (next === cur && (d == null) === (this.state.dayPick == null)) return;
+    const flip = this.themeOf(next) !== this.themeOf(cur);
+    this.setState({ dayPick: d, switching: flip || this.state.switching });
+    if (flip) this.later(() => this.setState({ switching: false }), 520);
+  }
+
+  pal() {
+    const t = this.themeOf(this.sprintDay());
+    if (t === 'amber') return { ac: '#C77700', hot: '#D21F14', hotIni: '#FFFFFF', glow: '255,170,60', bolt: '240,150,30', branch: '255,74,61', ring: '255,74,61', burst: ['#FF4A3D', '#FFFFFF', '#FFB547'] };
+    if (t === 'red') return { ac: '#B3170E', hot: '#F2B705', hotIni: '#111214', glow: '255,70,50', bolt: '235,40,25', branch: '255,211,77', ring: '255,211,77', burst: ['#FFD34D', '#FFFFFF', '#FF6A5C'] };
+    return { ac: '#2B3FD1', hot: '#D21F14', hotIni: '#FFFFFF', glow: '80,100,255', bolt: '70,92,255', branch: '255,74,61', ring: '255,74,61', burst: ['#FF4A3D', '#FFFFFF', '#7D8CFF'] };
+  }
+
+  componentDidMount() {
+    this.reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.resize();
+    if (window.ResizeObserver && this.mainEl) {
+      this.ro = new ResizeObserver(() => this.resize());
+      this.ro.observe(this.mainEl);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.ro) this.ro.disconnect();
+    this.timers.forEach((t) => clearTimeout(t));
+  }
+
+  later(fn, ms) { this.timers.push(setTimeout(fn, ms)); }
+
+  resize() {
+    const c = this.canvas;
+    if (!c) return;
+    const d = window.devicePixelRatio || 1;
+    c.width = Math.max(1, Math.round(c.offsetWidth * d));
+    c.height = Math.max(1, Math.round(c.offsetHeight * d));
+    this.ctx = c.getContext('2d');
+    this.ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  point(el, mode) {
+    const c = this.canvas;
+    const cr = c.getBoundingClientRect();
+    const s = (cr.width / (c.offsetWidth || 1)) || 1;
+    const r = el.getBoundingClientRect();
+    if (mode === 'chip') return { x: (r.right - cr.left) / s, y: (r.top + r.height / 2 - cr.top) / s };
+    return { x: (r.left + r.width / 2 - cr.left) / s, y: (r.top + r.height * 0.64 - cr.top) / s };
+  }
+
+  pick(id) {
+    if (this.state.leaving) return;
+    this.setState((s) => ({ selected: s.selected === id ? null : id }));
+  }
+
+  clickNode(id) {
+    if (this.state.selected && !this.state.leaving) this.assign(id);
+    else this.setState((s) => ({ focus: s.focus === id ? null : id }));
+  }
+
+  assign(memberId) {
+    const s = this.state;
+    const task = s.pending.find((t) => t.id === s.selected);
+    if (!task) return;
+    const member = this.team().find((m) => m.id === memberId);
+    API.assign(task.id, memberId).catch(ALLSPARK.report('Atama'));
+    const a = this.taskEls[task.id];
+    const b = this.nodeEls[memberId];
+    const animate = !this.reduce && this.ctx && a && b;
+    if (animate) this.spawn(a, b);
+    this.setState({ leaving: task.id, selected: null });
+    this.later(() => {
+      this.setState((st) => {
+        const prev = (st.assigned[memberId] || []).map((x) => ({ t: x.t, h: x.h }));
+        const next = Object.assign({}, st.assigned);
+        next[memberId] = prev.concat([{ t: task.title, h: task.hours, fresh: true }]);
+        return {
+          pending: st.pending.filter((x) => x.id !== task.id),
+          assigned: next,
+          leaving: null,
+          struck: memberId,
+          focus: memberId,
+          log: [{ key: task.id + Date.now(), who: member.name.split(' ')[0], text: task.title, h: task.hours + ' saat' }].concat(st.log).slice(0, 4)
+        };
+      });
+      this.later(() => this.setState({ struck: null }), 650);
+    }, animate ? 190 : 0);
+  }
+
+  spawn(a, b) {
+    const p1 = this.point(a, 'chip');
+    const p2 = this.point(b, 'tri');
+    const now = performance.now();
+    this.fx.push({ kind: 'bolt', x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, t0: now, dur: 560, pts: null, f: 0 });
+    this.fx.push({ kind: 'burst', x: p2.x, y: p2.y, t0: now + 180, dur: 950, parts: null });
+    if (!this.raf) this.raf = requestAnimationFrame(this.tick);
+  }
+
+  jag(x1, y1, x2, y2) {
+    let p = [[x1, y1], [x2, y2]];
+    let d = Math.hypot(x2 - x1, y2 - y1) * 0.17;
+    for (let k = 0; k < 6; k++) {
+      const n = [];
+      for (let i = 0; i < p.length - 1; i++) {
+        const a = p[i], b = p[i + 1];
+        const dx = b[0] - a[0], dy = b[1] - a[1];
+        const len = Math.hypot(dx, dy) || 1;
+        const o = (Math.random() - 0.5) * d;
+        n.push(a);
+        n.push([(a[0] + b[0]) / 2 - (dy / len) * o, (a[1] + b[1]) / 2 + (dx / len) * o]);
+      }
+      n.push(p[p.length - 1]);
+      p = n;
+      d *= 0.55;
+    }
+    return p;
+  }
+
+  trace(ctx, pts) {
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  }
+
+  drawBolt(ctx, f, e) {
+    if (!f.pts || f.f % 3 === 0) {
+      f.pts = this.jag(f.x1, f.y1, f.x2, f.y2);
+      const i = Math.floor(f.pts.length * (0.3 + Math.random() * 0.4));
+      const a = f.pts[i];
+      const bx = a[0] + (f.x2 - a[0]) * 0.35 + (Math.random() - 0.5) * 120;
+      const by = a[1] + (f.y2 - a[1]) * 0.35 + (Math.random() - 0.5) * 120;
+      f.branch = this.jag(a[0], a[1], bx, by);
+    }
+    f.f++;
+    const grow = Math.min(1, e / 180);
+    const fade = e < 180 ? 1 : Math.max(0, 1 - (e - 180) / (f.dur - 180));
+    const seg = f.pts.slice(0, Math.max(2, Math.floor(f.pts.length * grow)));
+    const P = this.pal();
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    this.trace(ctx, seg);
+    ctx.shadowColor = 'rgba(' + P.glow + ',' + fade + ')';
+    ctx.shadowBlur = 22;
+    ctx.strokeStyle = 'rgba(' + P.bolt + ',' + 0.85 * fade + ')';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(255,255,255,' + fade + ')';
+    ctx.strokeStyle = 'rgba(255,255,255,' + fade + ')';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    if (grow === 1) {
+      this.trace(ctx, f.branch);
+      ctx.shadowColor = 'rgba(' + P.branch + ',' + fade + ')';
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = 'rgba(' + P.branch + ',' + 0.9 * fade + ')';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    } else {
+      const h = seg[seg.length - 1];
+      ctx.shadowColor = '#FFFFFF';
+      ctx.shadowBlur = 24;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(h[0], h[1], 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  drawBurst(ctx, f, e) {
+    if (!f.parts) {
+      const n = this.props.sparks ?? 34;
+      const cols = this.pal().burst;
+      f.parts = [];
+      for (let i = 0; i < n; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 1.5 + Math.random() * 5.5;
+        f.parts.push({ x: f.x, y: f.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 1.4, c: cols[i % 3], life: 0.45 + Math.random() * 0.55 });
+      }
+      f.last = e;
+    }
+    const dt = Math.min(3, (e - f.last) / 16.7);
+    f.last = e;
+    const t = e / f.dur;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(' + this.pal().ring + ',' + (1 - t) * 0.8 + ')';
+    ctx.lineWidth = 2 * (1 - t) + 0.5;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, 10 + t * 95, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 1.6;
+    for (const p of f.parts) {
+      const lt = t / p.life;
+      if (lt >= 1) continue;
+      p.vx *= Math.pow(0.95, dt);
+      p.vy = p.vy * Math.pow(0.95, dt) + 0.13 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      ctx.globalAlpha = 1 - lt;
+      ctx.strokeStyle = p.c;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx * 2.6, p.y - p.vy * 2.6);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  tick(now) {
+    const ctx = this.ctx;
+    const c = this.canvas;
+    if (!ctx || !c) { this.raf = 0; return; }
+    ctx.clearRect(0, 0, c.width, c.height);
+    this.fx = this.fx.filter((f) => {
+      const e = now - f.t0;
+      if (e < 0) return true;
+      if (e > f.dur) return false;
+      if (f.kind === 'bolt') this.drawBolt(ctx, f, e);
+      else this.drawBurst(ctx, f, e);
+      return true;
+    });
+    if (this.fx.length) this.raf = requestAnimationFrame(this.tick);
+    else { this.raf = 0; ctx.clearRect(0, 0, c.width, c.height); }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const team = this.team();
+    const sel = s.pending.find((t) => t.id === s.selected) || null;
+    const load = (id) => (s.assigned[id] || []).reduce((a, x) => a + x.h, 0);
+    const P = this.pal();
+    const colorFor = (u) => (u >= 0.85 ? P.hot : P.ac);
+
+    let best = null;
+    if (sel) {
+      let bs = Infinity;
+      team.forEach((m) => {
+        const after = load(m.id) + sel.hours;
+        const sc = after / m.cap + (m.skills.indexOf(sel.tag) >= 0 ? 0 : 0.6) + (after > m.cap ? 2 : 0);
+        if (sc < bs) { bs = sc; best = m; }
+      });
+    }
+
+    const members = team.map((m) => {
+      const l = load(m.id);
+      const after = sel ? l + sel.hours : l;
+      const u = l / m.cap;
+      const over = !!sel && after > m.cap;
+      return {
+        x: m.x, y: m.y, name: m.name, role: m.role, initials: m.initials,
+        fillPct: Math.min(100, u * 100).toFixed(1),
+        ghostPct: sel ? Math.min(100, (after / m.cap) * 100).toFixed(1) : '0',
+        fillColor: colorFor(u),
+        iniColor: u >= 0.85 ? P.hotIni : '#FFFFFF',
+        ghostCls: over ? 'ghost ghost--over' : 'ghost',
+        edgeCls: over ? 'tri-edge--over' : '',
+        cls: ['node', sel ? 'is-target' : '', s.focus === m.id ? 'is-focus' : '', s.struck === m.id ? 'is-struck' : ''].join(' '),
+        recommended: !!sel && !!best && best.id === m.id,
+        loadLabel: sel ? (l + ' → ' + after + ' / ' + m.cap + ' saat') : (l + ' / ' + m.cap + ' saat'),
+        loadCls: over ? 'node-load node-load--over' : (u >= 0.85 ? 'node-load node-load--hot' : 'node-load'),
+        aria: sel ? (sel.title + ' işini ' + m.name + ' kişisine ata. Yük ' + after + ' / ' + m.cap + ' saat olur.') : (m.name + ', ' + m.role + ', yük ' + l + ' / ' + m.cap + ' saat'),
+        click: () => this.clickNode(m.id),
+        setRef: (el) => { if (el) this.nodeEls[m.id] = el; }
+      };
+    });
+
+    const tasks = s.pending.map((t) => ({
+      title: t.title, tag: t.tag, urgent: t.urgent,
+      hoursLabel: t.hours + ' saat',
+      cls: ['chip', s.selected === t.id ? 'is-charged' : '', s.leaving === t.id ? 'is-leaving' : ''].join(' '),
+      pressed: s.selected === t.id ? 'true' : 'false',
+      pick: () => this.pick(t.id),
+      setRef: (el) => { if (el) this.taskEls[t.id] = el; }
+    }));
+
+    const fmM = s.focus ? team.find((m) => m.id === s.focus) : null;
+    const fl = fmM ? load(fmM.id) : 0;
+    const fm = fmM
+      ? { name: fmM.name, role: fmM.role, load: fl, cap: fmM.cap, pct: Math.min(100, (fl / fmM.cap) * 100).toFixed(1), color: colorFor(fl / fmM.cap) }
+      : { name: '', role: '', load: 0, cap: 0, pct: 0, color: P.ac };
+    const focusTasks = fmM ? (s.assigned[fmM.id] || []).map((x) => ({ t: x.t, h: x.h + ' saat', cls: x.fresh ? 'ftask is-fresh' : 'ftask' })).reverse() : [];
+
+    const teamRows = team.map((m) => {
+      const l = load(m.id);
+      return { name: m.name, label: l + ' / ' + m.cap, pct: Math.min(100, (l / m.cap) * 100).toFixed(1), color: colorFor(l / m.cap), click: () => this.setState({ focus: m.id }) };
+    });
+
+    const totalLoad = team.reduce((a, m) => a + load(m.id), 0);
+    const totalCap = team.reduce((a, m) => a + m.cap, 0);
+
+    let hint = 'Soldan bir iş seç, sonra onu alacak kişiye tıkla.';
+    if (sel) hint = '“' + sel.title + '” için bir kişi seç. Önerilen: ' + (best ? best.name : '') + '.';
+    else if (!s.pending.length) hint = 'Tüm işler dağıtıldı.';
+
+    const day = this.sprintDay();
+    const th = this.themeOf(day);
+    const level = day <= 7 ? 'green' : (day <= 14 ? 'yellow' : 'red');
+    const days = [];
+    for (let d = 1; d <= 21; d++) {
+      const ph = d <= 7 ? 'g' : (d <= 14 ? 'y' : 'r');
+      days.push({
+        cls: 'dy' + (d === 8 || d === 15 ? ' wk' : '') + (d <= day ? ' is-' + ph : '') + (d === day ? ' is-now' : ''),
+        label: 'Sprint günü ' + d,
+        cur: d === day ? 'true' : 'false',
+        pick: () => this.pickDay(d),
+        drag: (e) => { if (e && (e.buttons & 1)) this.pickDay(d); }
+      });
+    }
+
+    return {
+      rootCls: 'ks' + (th === 'amber' ? ' th-amber' : (th === 'red' ? ' th-red' : '')) + (s.switching ? ' is-switch' : ''),
+      levelName: level === 'green' ? 'Yeşil' : (level === 'yellow' ? 'Sarı' : 'Kırmızı'),
+      lampG: level === 'green' ? 'lamp is-g' : 'lamp',
+      lampY: level === 'yellow' ? 'lamp is-y' : 'lamp',
+      lampR: level === 'red' ? 'lamp is-r' : 'lamp',
+      days, sprintDay: day, daysLeft: 21 - day,
+      dayAria: 'Sprintin ' + day + '. günü, ' + Math.ceil(day / 7) + '. hafta. Günü değiştirmek için bir çizgiye tıkla.',
+      dayManual: s.dayPick != null,
+      dayAuto: () => this.pickDay(null),
+      tasks, members, hint, fm, focusTasks, teamRows,
+      log: s.log,
+      pendingCount: s.pending.length,
+      teamLoad: totalLoad + ' / ' + totalCap,
+      hasSel: !!sel,
+      empty: s.pending.length === 0,
+      hasFocus: !!fmM,
+      noFocus: !fmM,
+      hasLog: s.log.length > 0,
+      noLog: s.log.length === 0,
+      edgeCls: sel ? 'edges is-live' : 'edges',
+      cancel: () => this.setState({ selected: null }),
+      clearFocus: () => this.setState({ focus: null }),
+      reset: () => this.setState(this.seed()),
+      setMain: (el) => { if (el) this.mainEl = el; },
+      setCanvas: (el) => { if (el) this.canvas = el; }
+    };
+  }
+}
+boot(Component, {"sprintStart": "2026-11-08", "sprintDay": 0, "sparks": 34});
+</script>
+</body>
+</html>
