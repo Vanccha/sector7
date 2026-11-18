@@ -66,9 +66,21 @@ export async function createUser(
   return row.id;
 }
 
-/** Kullanıcının şifresini (Better Auth "credential" hesabı) yazar ya da günceller. */
-export async function setCredentialPassword(db: DbOrTx, userId: string, plainPassword: string): Promise<void> {
-  const pw = passwordSchema.parse(plainPassword);
+/** Zayıf şifreye yalnız üretim dışında (lokal test) izin verilir. */
+export const weakPasswordsAllowed = () => process.env.NODE_ENV !== "production";
+
+/**
+ * Kullanıcının şifresini (Better Auth "credential" hesabı) yazar ya da günceller.
+ * `allowWeak` yalnız CLI/seed içindir ve üretimde yok sayılır.
+ */
+export async function setCredentialPassword(
+  db: DbOrTx,
+  userId: string,
+  plainPassword: string,
+  opts: { allowWeak?: boolean } = {},
+): Promise<void> {
+  const weakOk = !!opts.allowWeak && weakPasswordsAllowed() && plainPassword.length > 0;
+  const pw = weakOk ? plainPassword : passwordSchema.parse(plainPassword);
   const hashed = await hashPassword(pw);
   const [existing] = await db
     .select({ id: account.id })
@@ -186,7 +198,7 @@ export async function issueResetLink(db: DB, actor: Actor | null, userId: string
  */
 export async function createMainAdminAccount(
   db: DB,
-  input: { username: string; name: string; email: string; password: string },
+  input: { username: string; name: string; email: string; password: string; allowWeak?: boolean },
 ): Promise<{ userId: string; created: boolean }> {
   return db.transaction(async (tx) => {
     const uname = usernameSchema.parse(input.username);
@@ -200,7 +212,7 @@ export async function createMainAdminAccount(
       userId = await createUser(tx, { name: input.name, username: uname, email: input.email, isMainAdmin: true });
       created = true;
     }
-    await setCredentialPassword(tx, userId, input.password);
+    await setCredentialPassword(tx, userId, input.password, { allowWeak: input.allowWeak });
     await audit(tx, {
       actorId: null,
       action: "user.create_main_admin",

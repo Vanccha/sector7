@@ -48,6 +48,11 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - **package-lock.json Linux'ta üretilmeli**: Windows'taki npm, argon2'nin wasm yedeğinin `@emnapi/*` bağımlılıklarını kilit dosyasına yazmıyor ve Docker'da `npm ci` düşüyor. Bağımlılık değişince:
   `docker run --rm -v "${PWD}:/w" -w /w node:24-bookworm-slim npm install --package-lock-only --ignore-scripts`
 
+### Lokal test kolaylıkları (2026-11-18, geliştirici isteği)
+- Seed ve `admin:create`, `NODE_ENV !== "production"` iken kısa şifreye izin verir (lokal ana yönetici: `admin`). Üretimde 10 karakter alt sınırı geçerli; başvuru/şifre bağlantısı akışında her ortamda geçerli.
+- Giriş hız sınırı `next dev` sırasında kapalı (lokalde IP olmadığından tüm denemeler tek kovaya düşüyordu); testlerde ve üretimde açık.
+- Giriş formu sunucu hatasını (5xx) "şifre hatalı"dan ayrı gösterir.
+
 ### Dağıtım
 - `docker-compose.prod.yml`: `db` → `migrate` (göçleri uygulayıp çıkar) → `app` (standalone, `node` kullanıcısı) → `caddy` (otomatik HTTPS). Yalnız Caddy port açar; `X-Forwarded-For` Caddy tarafından gerçek IP ile yeniden yazılır (hız sınırı buna güvenir).
 - Debian slim taban imaj (argon2 yerel modülü glibc ister).

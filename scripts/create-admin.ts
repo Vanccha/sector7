@@ -29,7 +29,8 @@ if (!url) {
 
 const password = values.password || randomBytes(12).toString("base64url");
 const { db, pool } = createDb(url);
-createMainAdminAccount(db, { username: values.username, name: values.name, email: values.email, password })
+// Kısa şifreye yalnız lokal test aşamasında izin verilir (NODE_ENV=production'da yok sayılır).
+createMainAdminAccount(db, { username: values.username, name: values.name, email: values.email, password, allowWeak: true })
   .then((r) => {
     console.log(`Ana yönetici ${r.created ? "oluşturuldu" : "güncellendi"}: ${values.username}`);
     if (!values.password) console.log(`Şifre: ${password}`);

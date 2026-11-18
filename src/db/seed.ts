@@ -19,7 +19,10 @@ export const SAMPLE_AREAS = [
   { name: "Donanım", description: "Elektronik, gömülü sistemler ve prototipleme." },
 ];
 
-export async function seed(db: DB, opts: { admin?: { username: string; name: string; email: string; password: string } } = {}) {
+export async function seed(
+  db: DB,
+  opts: { admin?: { username: string; name: string; email: string; password: string; allowWeak?: boolean } } = {},
+) {
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await db.insert(settings).values({ key, value }).onConflictDoNothing();
   }
@@ -76,6 +79,8 @@ if (isMain) {
       name: process.env.SEED_ADMIN_NAME || "Kurucu",
       email: process.env.SEED_ADMIN_EMAIL || `${username}@example.com`,
       password,
+      // Lokal test aşamasında kısa şifreye izin verilir; üretimde (NODE_ENV=production) yok sayılır.
+      allowWeak: true,
     },
   })
     .then((r) => {

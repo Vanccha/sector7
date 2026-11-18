@@ -58,7 +58,9 @@ export const auth = betterAuth({
     },
   },
   rateLimit: {
-    enabled: true,
+    // Lokal geliştirmede (next dev) kapalı: IP olmadığı için tüm denemeler tek kovaya düşüyor.
+    // Testlerde ve üretimde açık.
+    enabled: process.env.NODE_ENV !== "development",
     storage: "database",
     window: 60,
     max: 100,

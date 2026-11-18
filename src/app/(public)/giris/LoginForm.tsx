@@ -23,7 +23,14 @@ export function LoginForm() {
         password: String(fd.get("password") ?? ""),
       });
       if (res.error) {
-        setError(res.error.status === 429 ? "Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene." : BAD_CREDENTIALS);
+        const st = res.error.status;
+        setError(
+          st === 429
+            ? "Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene."
+            : st === 401 || st === 422
+              ? BAD_CREDENTIALS
+              : "Sunucuda bir sorun var; birazdan tekrar dene.",
+        );
         setBusy(false);
         return;
       }
