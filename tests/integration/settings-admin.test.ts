@@ -5,7 +5,7 @@ import { getSettings } from "../../src/lib/settings";
 import { acceptOffer } from "../../src/server/pool";
 import { getSettingsView, updateSettings } from "../../src/server/settings-admin";
 import { db, resetDb } from "../helpers/db";
-import { H, MIN, T0, at, expectValidation, setSetting, setupCycle, ticketById } from "../helpers/cycle";
+import { H, MIN, T0, at, expectValidation, makeMember, setSetting, setupCycle, ticketById } from "../helpers/cycle";
 import { expectMainAdminOnly } from "../helpers/admin";
 import { auditRows, makeTicketRow } from "../helpers/plan";
 
@@ -138,9 +138,11 @@ describe("updateSettings", () => {
 describe("ticketHours değişikliği yalnız sonraki işlemlere uygulanır", () => {
   it("var olan taken ticket'ın dueAt'i değişmez; sonraki kabul yeni değeri kullanır", async () => {
     const c = await setupCycle();
-    const mkOffer = () =>
+    // Tek aktif ticket kuralı: ikinci kabulü başka bir üye yapar.
+    const other = await makeMember(c.home.id, "Üye İki");
+    const mkOffer = (who = c.member) =>
       makeTicketRow({
-        areaId: c.areaA.id, sprintId: c.sprint.id, createdById: c.admin.id, status: "offered", assigneeId: c.member.id, offeredAt: T0,
+        areaId: c.areaA.id, sprintId: c.sprint.id, createdById: c.admin.id, status: "offered", assigneeId: who.id, offeredAt: T0,
       });
     const first = await mkOffer();
     await acceptOffer(db, c.member, { ticketId: first.id }, at(MIN));
@@ -150,8 +152,8 @@ describe("ticketHours değişikliği yalnız sonraki işlemlere uygulanır", () 
     await updateSettings(db, c.admin, valid({ ticketHours: 24 }), at(2 * MIN));
     expect((await ticketById(first.id)).dueAt).toEqual(before.dueAt);
 
-    const second = await mkOffer();
-    await acceptOffer(db, c.member, { ticketId: second.id }, at(3 * MIN));
+    const second = await mkOffer(other);
+    await acceptOffer(db, other, { ticketId: second.id }, at(3 * MIN));
     expect((await ticketById(second.id)).dueAt).toEqual(at(3 * MIN + 24 * H));
     // Birincisi hâlâ eski süreyle.
     expect((await ticketById(first.id)).dueAt).toEqual(before.dueAt);

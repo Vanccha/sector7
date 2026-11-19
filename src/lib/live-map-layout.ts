@@ -8,10 +8,9 @@
  *    okunmaz hâle gelmez, ama ikinci halka kompakt kalır). Aktif (bağlantılı) alanlar önce halka-1'e girer; aktif sayısı
  *    N1MAX'ı aşarsa halka-1 büyür. Kalan BOŞ alanlar halka-2'ye gider: R2 ≈ R1 + altıgen yüksekliği + boşluk, yarım adım
  *    kaydırılmış, eşit açılı. Halka-2'ye bağlantı gitmez.
- * C) Kişiler merkezde, iki iç halka: v = bağlı alan birim vektörlerinin ortalaması, θ = atan2(v), m = |v|. m ≥ 0.5 olanlar
- *    dış iç halkada (0.62·Rin), m < 0.5 olanlar iç iç halkada (0.28·Rin); her halkada θ'ya göre sıralı, kendi açısında,
- *    komşular arası en az MIN_CHORD (döngüsel yarı yarıya itme). Sığmazsa önce dış halka (üst sınır R1 − 70 − etiket payı),
- *    sonra R1 büyür. Arama yok; çakışma ya da yabancı altıgen kesişimi olursa aynı sırayla büyütülür.
+ * C) Kişiler (tek aktif ticket kuralı, 2026-11-19: her kişi tek alana bağlı): kendi alanının hemen iç tarafında, alan ile
+ *    merkez arasında; aynı alandakiler teğet yönde simetrik bir sıra, sığmazsa içeri doğru yeni sıra. Çakışma ya da yabancı
+ *    altıgen kesişimi olursa R1 büyür. (Eski veride birden çok bağlantısı olan kişi halkada ilk alanının önüne konur.)
  * D) Bağlantılar: kişi gövdesinden alan altıgeninin kişiye bakan kenarındaki en yakın noktaya düz çizgi.
  */
 import type { LiveMap } from "@/lib/contracts/live-map";
@@ -45,20 +44,11 @@ export const N1MAX = 14;
 const PERSON_R = 30;
 /** Kişi gövdesi + ad etiketinin ilk satırı (çizgi–kişi kesişim testi) + pay. */
 const BODY = { hx: 30 + 3, top: 26 + 3, bottom: 52 };
-/** İki iç halka: dış (m ≥ M_SPLIT) ve iç (m < M_SPLIT) yarıçapları, iç bölge yarıçapının katı. */
-const R_OUT = 0.62;
-const R_MID = 0.28;
-const M_SPLIT = 0.5;
-/** Aynı halkada komşu kişi merkezleri arası en az uzaklık (112x88 kutular + SEP hiçbir yönde çakışmaz). */
-const MIN_CHORD = 156;
-/** İki halka arası en az yarıçap farkı. */
-const RING_GAP = 100;
-/** Hedef açıdan en çok sapma (itme sonrası). */
-const MAX_DEV = (25 * Math.PI) / 180;
-/** Kişi ad etiketi payı (dış halka sınırı: R1 − altıgen yarı yüksekliği − pay). */
-const LABEL_PAD = 30;
-/** İç bölge payı (kişi kutusunun yarısı kadar). */
-const INNER_PAD = 60;
+/** R1 başlangıcı için kaba kişi sırası derinliği (alan merkezinden ilk sıraya, sıralar arası). */
+const FRONT = HEX_H / 2 + 62 + 16;
+const ROW_H = 104;
+/** Kişi sırası alanın açı diliminden bu kat geniş olabilir (komşu dilime taşma; çakışma denetimi korur). */
+const FAN = 1.6;
 /** Altıgen çokgeni kesişim testinde bu kadar şişirilir (px). */
 const HEX_MARGIN = 2;
 /** Düğüm merkezinden kutu kenarlarına uzaklık (kişide alt etiket dâhil). */
@@ -234,8 +224,6 @@ function splitRings(map: LiveMap) {
   return { ring1, ring2: empties.slice(e) };
 }
 
-type PersonSpec = { id: string; name: string; areas: string[]; theta: number; mag: number };
-
 /** Çizgi: kişi merkezinden hedef altıgenin en yakın kenar noktasına; başlangıç gövde kenarında. */
 function lineOf(q: Pt, c: Pt, poly: Pt[] = hexAt(c)): { start: Pt; end: Pt } {
   const end = nearestOnPoly(poly, q);
@@ -244,162 +232,49 @@ function lineOf(q: Pt, c: Pt, poly: Pt[] = hexAt(c)): { start: Pt; end: Pt } {
 }
 
 /**
- * Bir halkadaki kişi açıları (θ'ya göre sıralı, dairesel): ardışık iki kişi arasında en az `delta` açı kalana kadar
- * çiftleri yarı yarıya iter (sıra korunur, açıların ortalaması sabit kalır). Sığmıyorsa null.
+ * Eksene hizalı kutuları (x'te `gx`, y'de `gy` en az aralık) (dx, dy) birim yönünde ayıran en kısa adım: kutular
+ * eksenlerden birinde ayrılınca yeter.
  */
-function spreadAngles(angles: number[], delta: number): number[] | null {
-  const n = angles.length;
-  if (n <= 1) return [...angles];
-  if (n * delta > TAU - 1e-9) return null;
-  const b = [...angles];
-  for (let it = 0; it < 400; it++) {
-    let moved = false;
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      const gap = b[j]! - b[i]! + (j === 0 ? TAU : 0);
-      if (gap < delta - 1e-9) {
-        const d = (delta - gap) / 2;
-        b[i] = b[i]! - d;
-        b[j] = b[j]! + d;
-        moved = true;
-      }
-    }
-    if (!moved) break;
-  }
-  return b;
-}
+const stepAlong = (dx: number, dy: number, gx: number, gy: number) =>
+  Math.min(Math.abs(dx) > 1e-9 ? gx / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-9 ? gy / Math.abs(dy) : Infinity);
+const PB = NODE_BOX.person;
+const AB = NODE_BOX.area;
 
-type Rings = { rOut: number; rMid: number };
-
-/**
- * İki iç halka: m ≥ 0.5 olanlar dış halkada (rOut), m < 0.5 olanlar iç halkada (rMid); her biri kendi θ açısında,
- * komşular arası en az MIN_CHORD uzaklıkla. m≈0 olan tek kişi merkeze konur.
- */
-function placeRings(specs: PersonSpec[], { rOut, rMid }: Rings): Map<string, Pt> | null {
+/** Her alanın kişileri (ad sırasıyla) alanın iç tarafında, teğet yönde simetrik sıralar hâlinde. */
+function placePeople(groups: Map<string, string[]>, areaPts: LayoutPoint[], n1: number): Map<string, Pt> {
   const out = new Map<string, Pt>();
-  const groups: [PersonSpec[], number][] = [
-    [specs.filter((s) => s.mag >= M_SPLIT), rOut],
-    [specs.filter((s) => s.mag < M_SPLIT), rMid],
-  ];
-  for (const [g, r] of groups) {
-    if (g.length === 0) continue;
-    if (g.length === 1 && g[0]!.mag < 1e-6) {
-      out.set(g[0]!.id, { x: 0, y: 0 });
-      continue;
-    }
-    const sorted = [...g]
-      .map((s) => ({ s, t: ((s.theta % TAU) + TAU) % TAU }))
-      .sort((p, q) => p.t - q.t || cmp(p.s, q.s));
-    const ang = spreadAngles(sorted.map((e) => e.t), MIN_CHORD / Math.max(r, 1));
-    if (!ang) return null;
-    sorted.forEach((e, i) => out.set(e.s.id, { x: Math.round(r * Math.cos(ang[i]!)), y: Math.round(r * Math.sin(ang[i]!)) }));
+  for (const a of areaPts.slice(0, n1)) {
+    const ids = groups.get(a.id);
+    if (!ids?.length) continue;
+    const R = Math.hypot(a.x, a.y);
+    const ux = R > 0 ? -a.x / R : 0; // içeri (merkeze) birim vektör
+    const uy = R > 0 ? -a.y / R : 1;
+    const tx = -uy; // teğet
+    const ty = ux;
+    // Alan kutusundan ilk sıraya, sıralar arası ve sıra içi aralıklar yöne göre (kutular eksene hizalı).
+    // G: çakışma testi en az SEP boşluk ister; yuvarlama ve eğik yön için ek pay.
+    const G = SEP + 4;
+    const front = stepAlong(ux, uy, AB.r + PB.l + G, uy > 0 ? AB.b + PB.t + G : AB.t + PB.b + G);
+    const rowStep = stepAlong(ux, uy, PB.l + PB.r + G, PB.t + PB.b + G);
+    const colStep = stepAlong(tx, ty, PB.l + PB.r + G, PB.t + PB.b + G);
+    const sector = n1 < 2 ? Infinity : FAN * 2 * Math.max(0, R - front) * Math.sin(Math.PI / n1);
+    const cap = Math.max(1, Math.min(ids.length, Math.floor(sector / colStep)));
+    ids.forEach((id, j) => {
+      const row = Math.floor(j / cap);
+      const inRow = Math.min(cap, ids.length - row * cap);
+      const off = (j - row * cap - (inRow - 1) / 2) * colStep;
+      // Sıranın yanlarındaki kişi eğik yönde alana yaklaşabilir: kendi alanından ayrılana kadar içeri it.
+      const aBox = boxOf(a, AB);
+      let d = front + row * rowStep;
+      let q = { x: Math.round(a.x + ux * d + tx * off), y: Math.round(a.y + uy * d + ty * off) };
+      while (hit(boxOf({ id, ...q }, PB), aBox)) {
+        d += 4;
+        q = { x: Math.round(a.x + ux * d + tx * off), y: Math.round(a.y + uy * d + ty * off) };
+      }
+      out.set(id, q);
+    });
   }
   return out;
-}
-
-function maxDeviation(specs: PersonSpec[], pos: Map<string, Pt>): number {
-  let mx = 0;
-  for (const s of specs) {
-    const q = pos.get(s.id)!;
-    if (s.mag < 0.05 || Math.hypot(q.x, q.y) < 1) continue;
-    const d = Math.abs(Math.atan2(Math.sin(Math.atan2(q.y, q.x) - s.theta), Math.cos(Math.atan2(q.y, q.x) - s.theta)));
-    mx = Math.max(mx, d);
-  }
-  return mx;
-}
-
-/**
- * Son geçiş (en çok 3 tur, deterministik): bir çizgi başka bir kişinin gövdesini kesiyorsa o kişiyi halkasında çizgiden
- * uzağa 4°'lik adımlarla (hedef açıdan ≤25°) döndürür; olmazsa çizginin sahibini ±20px'e kadar radyal kaydırır.
- * Her adım çakışma ve yabancı altıgen kontrolünden geçmeli ve toplam kesişimi azaltmalıdır.
- */
-function refineCrossings(pos: Map<string, Pt>, specs: PersonSpec[], areaPts: LayoutPoint[]): void {
-  const byId = new Map(areaPts.map((a) => [a.id, a]));
-  const raw = new Map(areaPts.map((a) => [a.id, hexAt(a)]));
-  const fat = new Map(areaPts.map((a) => [a.id, hexAt(a, HEX_MARGIN)]));
-  const aBoxes = areaPts.map((a) => boxOf(a, NODE_BOX.area));
-  const specOf = new Map(specs.map((s) => [s.id, s]));
-  const boxAt = (q: Pt) => boxOf({ id: "", ...q }, NODE_BOX.person);
-  const linesAt = (id: string, q: Pt) => specOf.get(id)!.areas.map((aid) => ({ aid, ...lineOf(q, byId.get(aid)!, raw.get(aid)!) }));
-  const valid = (id: string, q: Pt) => {
-    const b = boxAt(q);
-    if (aBoxes.some((a) => hit(b, a))) return false;
-    for (const [oid, o] of pos) if (oid !== id && hit(b, boxAt(o))) return false;
-    for (const l of linesAt(id, q))
-      for (const [aid, poly] of fat) if (aid !== l.aid && segHitsPoly(l.start, l.end, poly)) return false;
-    return true;
-  };
-  /** `id` kişisinin q konumunda dâhil olduğu çizgi–gövde kesişim sayısı. */
-  const crossings = (id: string, q: Pt) => {
-    let c = 0;
-    const body = bodyPoly(q);
-    for (const l of linesAt(id, q))
-      for (const [oid, o] of pos) if (oid !== id && segHitsPoly(l.start, l.end, bodyPoly(o))) c++;
-    for (const [oid, o] of pos) {
-      if (oid === id) continue;
-      for (const l of linesAt(oid, o)) if (segHitsPoly(l.start, l.end, body)) c++;
-    }
-    return c;
-  };
-  const step = (4 * Math.PI) / 180;
-  const tryMoves = (id: string, moves: Pt[]): boolean => {
-    const cur = pos.get(id)!;
-    const base = crossings(id, cur);
-    for (const q of moves) {
-      if (q.x === cur.x && q.y === cur.y) continue;
-      if (valid(id, q) && crossings(id, q) < base) {
-        pos.set(id, q);
-        return true;
-      }
-    }
-    return false;
-  };
-  for (let round = 0; round < 3; round++) {
-    let changed = false;
-    for (const a of specs) {
-      for (const l of linesAt(a.id, pos.get(a.id)!)) {
-        for (const b of specs) {
-          if (b.id === a.id) continue;
-          const bq = pos.get(b.id)!;
-          if (!segHitsPoly(l.start, l.end, bodyPoly(bq))) continue;
-          const rb = Math.hypot(bq.x, bq.y);
-          const phi = Math.atan2(bq.y, bq.x);
-          let moved = false;
-          if (rb >= 1) {
-            // Çizgiden uzaklaşan yön önce.
-            const side = (l.end.x - l.start.x) * (bq.y - l.start.y) - (l.end.y - l.start.y) * (bq.x - l.start.x);
-            const tang = -Math.sin(phi) * (l.end.y - l.start.y) * -1 + Math.cos(phi) * (l.end.x - l.start.x) * -1;
-            const away = side * tang >= 0 ? -1 : 1;
-            const moves: Pt[] = [];
-            for (let k = 1; k <= 6; k++)
-              for (const sg of [away, -away]) {
-                const t = phi + sg * k * step;
-                if (b.mag >= 0.05 && Math.abs(Math.atan2(Math.sin(t - b.theta), Math.cos(t - b.theta))) > MAX_DEV + 1e-9) continue;
-                moves.push({ x: Math.round(rb * Math.cos(t)), y: Math.round(rb * Math.sin(t)) });
-              }
-            moved = tryMoves(b.id, moves);
-          }
-          if (!moved) {
-            const aq = pos.get(a.id)!;
-            const ra = Math.hypot(aq.x, aq.y);
-            if (ra >= 1) {
-              const moves: Pt[] = [];
-              for (let d = 4; d <= 20; d += 4)
-                for (const sg of [1, -1]) {
-                  const k = Math.max(0, ra + sg * d) / ra;
-                  moves.push({ x: Math.round(aq.x * k), y: Math.round(aq.y * k) });
-                }
-              moved = tryMoves(a.id, moves);
-            }
-          }
-          if (moved) changed = true;
-          break;
-        }
-        // Sahibin konumu değişmiş olabilir; çizgileri yeniden almak için bu kişiyi bırak.
-      }
-    }
-    if (!changed) break;
-  }
 }
 
 /**
@@ -410,94 +285,40 @@ export function layoutLiveMap(map: LiveMap, size?: { width: number; height: numb
   if (map.areas.length === 0 && map.people.length === 0) return { areas: [], people: [], links: [], width: PAD * 2, height: PAD * 2 };
   const { ring1 } = splitRings(map);
   const people = [...map.people].sort(cmp);
-  const sortedAreas = [...map.areas].sort(cmp);
-  const areaIdx = new Map(sortedAreas.map((a, i) => [a.id, i]));
-
-  const linkedAreas = new Map<string, string[]>();
+  const ringIdx = new Map(ring1.map((a, i) => [a.id, i]));
+  // Kişinin alanı: halka-1'deki bağlı alanlardan sıraca ilki (tek ticket kuralıyla zaten tek alan).
+  const areaOf = new Map<string, string>();
   for (const l of map.links) {
-    if (!areaIdx.has(l.areaId)) continue;
-    const a = linkedAreas.get(l.userId) ?? [];
-    if (!a.includes(l.areaId)) a.push(l.areaId);
-    linkedAreas.set(l.userId, a);
+    const cur = areaOf.get(l.userId);
+    if (ringIdx.has(l.areaId) && (cur === undefined || ringIdx.get(l.areaId)! < ringIdx.get(cur)!)) areaOf.set(l.userId, l.areaId);
   }
-  for (const a of linkedAreas.values()) a.sort((x, y) => areaIdx.get(x)! - areaIdx.get(y)!);
+  const groups = new Map<string, string[]>();
+  for (const p of people) {
+    const aid = areaOf.get(p.id);
+    if (aid) groups.set(aid, [...(groups.get(aid) ?? []), p.id]);
+  }
+  const maxGroup = Math.max(0, ...[...groups.values()].map((g) => g.length));
 
-  // Alan halkası-1 açıları R1'den bağımsız (yalnız yön); yön vektörü bir kez hesaplanır.
-  const dirOf = new Map(ring1.map((a, i) => [a.id, (i * TAU) / ring1.length]));
-  const specs: PersonSpec[] = people.map((p) => {
-    const ids = (linkedAreas.get(p.id) ?? []).filter((id) => dirOf.has(id));
-    let vx = 0;
-    let vy = 0;
-    for (const id of ids) {
-      const t = dirOf.get(id)!;
-      vx += Math.sin(t); // tepeden saat yönü: x = sin, y = -cos
-      vy += -Math.cos(t);
-    }
-    const n = Math.max(1, ids.length);
-    vx /= n;
-    vy /= n;
-    const mag = Math.hypot(vx, vy);
-    return { id: p.id, name: p.name, areas: ids, mag: mag < 1e-9 ? 0 : mag, theta: mag < 1e-9 ? 0 : Math.atan2(vy, vx) };
-  });
-  const nOut = specs.filter((s) => s.mag >= M_SPLIT).length;
-  const nMid = specs.length - nOut;
-  const need = (n: number) => (n > 1 ? (n * MIN_CHORD) / TAU : 0);
-
-  let R1 = Math.max(chordR(ring1.length), 140);
+  // Kalabalık alanın kişileri (en çok 4) tek sırada yan yana sığsın: sıra genişliği ≤ alanın sektör kirişi.
+  const perRow = Math.min(4, maxGroup);
+  const rowFit = ring1.length < 2 ? 0 : FRONT + (perRow * (NODE_BOX.person.l + NODE_BOX.person.r + 12)) / (FAN * 2 * Math.sin(Math.PI / ring1.length));
+  let R1 = Math.max(chordR(ring1.length), 140, rowFit, FRONT + Math.ceil(maxGroup / 4) * ROW_H);
   let rings = placeAreas(map, R1);
   let pos = new Map<string, Pt>();
-  let fallback: { pos: Map<string, Pt>; R1: number; dev: number } | null = null;
-  let R1start: number | undefined;
-  const person = (q: Pt) => boxOf({ id: "", ...q }, NODE_BOX.person);
   for (let it = 0; it < 80; it++) {
     rings = placeAreas(map, R1);
-    const rin = Math.max(0, R1 - HEX_H / 2 - INNER_PAD);
-    const cap = R1 - HEX_H / 2 - LABEL_PAD;
-    const rMid = Math.max(R_MID * rin, need(nMid));
-    let r0 = Math.max(R_OUT * rin, need(nOut));
-    if (nOut > 0 && nMid > 0) r0 = Math.max(r0, rMid + RING_GAP);
-    R1start ??= R1;
-    if (nOut > 0 && r0 > cap) {
-      R1 = Math.max(R1 + 24, Math.ceil(r0 + HEX_H / 2 + LABEL_PAD));
-      continue;
-    }
-    const aBoxes = rings.pts.map((a) => boxOf(a, NODE_BOX.area));
-    const byId = new Map(rings.pts.map((a) => [a.id, a]));
-    const polys = new Map(rings.pts.map((a) => [a.id, hexAt(a, HEX_MARGIN)]));
-    let ok: Map<string, Pt> | null = null;
-    for (let r = nOut > 0 ? r0 : cap; r <= cap + 1e-9 && !ok; r += 12) {
-      const cand = placeRings(specs, { rOut: r, rMid });
-      if (!cand) continue;
-      const boxes = [...cand.values()].map(person);
-      let bad = boxes.some((b) => aBoxes.some((a) => hit(b, a)));
-      for (let i = 0; i < boxes.length && !bad; i++) for (let j = i + 1; j < boxes.length && !bad; j++) bad = hit(boxes[i]!, boxes[j]!);
-      for (const s of specs) {
-        if (bad) break;
-        const q = cand.get(s.id)!;
-        for (const aid of s.areas) {
-          const l = lineOf(q, byId.get(aid)!);
-          for (const [id, poly] of polys) if (id !== aid && segHitsPoly(l.start, l.end, poly)) bad = true;
-        }
-      }
-      if (bad) continue;
-      const dev = maxDeviation(specs, cand);
-      if (!fallback || dev < fallback.dev - 1e-9) fallback = { pos: cand, R1, dev };
-      if (dev <= MAX_DEV) ok = cand;
-    }
-    if (ok) {
-      pos = ok;
-      break;
-    }
-    // Sapma 25°'yi aşıyorsa R1 en çok 1.4 katına kadar büyür; sonra en az sapmalı geçerli yerleşim kullanılır.
-    if (fallback && R1 >= R1start * 1.4) {
-      pos = fallback.pos;
-      R1 = fallback.R1;
-      rings = placeAreas(map, R1);
-      break;
-    }
+    pos = placePeople(groups, rings.pts, rings.ring1);
+    const cand = { areas: rings.pts, people: [...pos].map(([id, q]) => ({ id, ...q })) };
+    const crosses = map.links.some((l) => {
+      const q = pos.get(l.userId);
+      const a = rings.pts.find((x) => x.id === l.areaId);
+      if (!q || !a) return false;
+      const { start, end } = lineOf(q, a);
+      return linkCrossesForeignHex(cand, { areaId: l.areaId, pts: [start, end] });
+    });
+    if (!layoutHasOverlap(cand) && !crosses) break;
     R1 += 24;
   }
-  refineCrossings(pos, specs, rings.pts);
   const personPts: LayoutPoint[] = people.map((p) => ({ id: p.id, x: pos.get(p.id)?.x ?? 0, y: pos.get(p.id)?.y ?? 0 }));
   const areaPtsC = rings.pts;
 

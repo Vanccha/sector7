@@ -3,7 +3,7 @@ import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { requestTicketAction } from "@/app/(app)/actions";
-import type { DrawResult, MyTicketsView, OfferView, RejectionQuota } from "@/lib/contracts/tickets";
+import { ACTIVE_LIMIT_MESSAGE, type DrawResult, type MyTicketsView, type OfferView, type RejectionQuota } from "@/lib/contracts/tickets";
 import { OfferCard, QuotaText } from "./OfferCard";
 import { ACCEPT_FX_MS, playAcceptFx, prefersReducedMotion, SparkFx } from "./SparkFx";
 import styles from "./tickets.module.css";
@@ -22,6 +22,7 @@ export function SparkRequest({ initial }: { initial: MyTicketsView }) {
   const fxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const noSprint = !initial.sprint;
+  const busy = initial.activeLimitReached;
 
   function draw() {
     setError(null);
@@ -84,7 +85,9 @@ export function SparkRequest({ initial }: { initial: MyTicketsView }) {
       <p className="muted" style={{ margin: 0, fontSize: 14 }}>
         {noSprint
           ? "Şu an aktif bir sprint yok; sprint başladığında buradan ticket isteyebilirsin."
-          : "Kıvılcım çaktığında ana alanın dışından rastgele bir ticket önerilir. Kabul edersen geri sayım başlar."}
+          : busy
+            ? ACTIVE_LIMIT_MESSAGE
+            : "Kıvılcım çaktığında ana alanın dışından rastgele bir ticket önerilir. Kabul edersen geri sayım başlar."}
       </p>
       <QuotaText q={quota} />
       {warn ? (
@@ -102,7 +105,7 @@ export function SparkRequest({ initial }: { initial: MyTicketsView }) {
       ) : (
         <div className={styles.actions}>
           <span className={`${styles.sparkWrap} ${pending ? styles.sparkBusy : ""}`}>
-            <button type="button" className="btn-solid" onClick={onClick} disabled={noSprint || pending} aria-busy={pending}>
+            <button type="button" className="btn-solid" onClick={onClick} disabled={noSprint || busy || pending} aria-busy={pending}>
               {pending ? "Kıvılcım çakılıyor…" : rejected ? "Yenisini iste" : "Kıvılcım çak"}
             </button>
             <SparkFx on={fx} />

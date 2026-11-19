@@ -64,7 +64,7 @@ Bir kişi birden fazla role sahip olabilir (ana yönetici aynı zamanda alan yö
 ### Ticket alma (çekme modeli)
 - Atama yoktur. Üye müsait olduğunda "ticket iste" der; sistem ona rastgele bir ticket verir.
 - Rastgele havuz: üyenin ana alanı dışındaki alanlardan, şu an alınabilir durumdaki ticket'lar. Seçim bilinçli olarak tam rastgeledir. Eşzamanlı isteklerde aynı ticket iki kişiye düşmemeli (veritabanı kilidi/işlem).
-- Kişi yoğunluğunu kendi seçer; aynı anda birden fazla aktif ticket'ı olabilir. Kapasite, doluluk oranı ya da yük hesabı yoktur.
+- Kişi aynı anda yalnız **bir** aktif ticket'a sahip olabilir (alındı ve yan durumları: ek süre / geri çekme bekliyor; bekleyen teklif de yeni istemeyi engeller). Teslim edince serbest kalır, değerlendirmeyi beklemez. Her ticket'a zaten 72 saat verilir. *(Geliştirici kararı, 2026-11-19; önceki kural: birden fazla aktif ticket.)* Kapasite, doluluk oranı ya da yük hesabı yoktur.
 - **Red hakkı:** Gelen ticket'ı beğenmeyen kişi sprint başına 2 kez reddedip yenisini isteyebilir. Kalan hak arayüzde görünür. Reddedilen ticket havuza döner ve başkasının almasını bekler.
 - **Kabul edilen ticket bırakılamaz.** Kişi öngöremediği bir yoğunluk çıkarsa alan yöneticisine uygulama içinden "bu süreçte yapamayacağım, ticket'ı benden geri çek" diye **geri çekme talebi** gönderir. Karar alan yöneticisinindir; onaylarsa ticket havuza döner.
 

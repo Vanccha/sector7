@@ -7,7 +7,9 @@ import { requireActor } from "@/lib/auth/guards";
 import type { Actor } from "@/lib/contracts/actor";
 import { invalidState } from "@/lib/contracts/errors";
 import {
+  ACTIVE_LIMIT_MESSAGE,
   IN_PROGRESS_STATUSES,
+  MAX_ACTIVE_TICKETS,
   ticketRefSchema,
   type DrawResult,
   type MyTicketsView,
@@ -43,10 +45,22 @@ async function areaNameOf(db: DbOrTx, areaId: string): Promise<string> {
 }
 
 /** Ticket iste: ticket kişiye teklif olarak (red hakkı varsa) ya da doğrudan atanarak düşer. */
+/** Tek aktif ticket kuralı (geliştirici kararı 2026-11-19). Kişinin istek kilidi içinde çağrılır. */
+async function assertActiveLimit(tx: DbOrTx, userId: string): Promise<void> {
+  const [row] = await tx
+    .select({ n: sql<number>`count(*)::int` })
+    .from(tickets)
+    .where(and(eq(tickets.assigneeId, userId), inArray(tickets.status, [...IN_PROGRESS_STATUSES])));
+  if ((row?.n ?? 0) >= MAX_ACTIVE_TICKETS) throw invalidState(ACTIVE_LIMIT_MESSAGE);
+}
+
+const lockUserRequests = (tx: DbOrTx, userId: string) =>
+  tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"ticket-request:" + userId}))`);
+
 export async function requestTicket(db: DB, actor: Actor | null, now: Date = new Date()): Promise<DrawResult> {
   const a = requireActor(actor);
   return db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"ticket-request:" + a.id}))`);
+    await lockUserRequests(tx, a.id);
     const sprint = await getActiveSprint(tx);
     if (!sprint) throw invalidState("Şu an aktif sprint yok; ticket istenemez.");
     const settings = await getSettings(tx);
@@ -79,6 +93,9 @@ export async function requestTicket(db: DB, actor: Actor | null, now: Date = new
         data: { reason: "lazy" },
       });
     }
+
+    // Elinde aktif ticket varken yeni ticket çekilmez (doğrudan atama dahil).
+    await assertActiveLimit(tx, a.id);
 
     // Red hakkı bittiyse ticket doğrudan atanacak: bağlı GitHub hesabı yoksa ticket çekmeden reddet.
     const quota = await quotaOf();
@@ -173,11 +190,13 @@ export async function acceptOffer(db: DB, actor: Actor | null, raw: { ticketId: 
   const a = requireActor(actor);
   const input = ticketRefSchema.parse(raw);
   await db.transaction(async (tx) => {
+    await lockUserRequests(tx, a.id);
     const t = await lockTicket(tx, input.ticketId);
     assertOwnOffer(t, a.id);
     if (!t.offeredAt || isOfferExpired(t.offeredAt, now)) {
       throw invalidState("Teklifin süresi doldu; yeni ticket isteyebilirsin.");
     }
+    await assertActiveLimit(tx, a.id);
     await assertGithubLinkedForTickets(tx, a.id);
     const settings = await getSettings(tx);
     await tx
@@ -270,6 +289,7 @@ export async function getMyTickets(db: DB, actor: Actor | null, now: Date = new 
   const offerValid = offered?.offeredAt && !isOfferExpired(offered.offeredAt, now) ? offered : null;
   return {
     sprint: sprint ? { id: sprint.id, name: sprint.name } : null,
+    activeLimitReached: activeRows.length >= MAX_ACTIVE_TICKETS,
     rejections,
     offer: offerValid ? toOfferView(offerValid, names.get(offerValid.areaId) ?? "") : null,
     active: activeRows.map((t) => toTicketCard(t, names.get(t.areaId) ?? "")),

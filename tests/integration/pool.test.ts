@@ -300,13 +300,15 @@ describe("getMyTickets", () => {
 
   it("sprint, kota, teklif, aktifler (en yakın bitiş önce) ve son teslimler", async () => {
     const c = await setupCycle();
+    // Teklif önce çekilir (tek aktif ticket kuralı: aktif ticket varken istek reddedilir); aktifler sonra fikstürle
+    // eklenir — görünümün sıralamasını sınamak için (eski veride birden çok aktif olabilir).
+    await poolTicket(c, c.areaA.id);
+    const draw = await requestTicket(db, c.member, T0);
+    expect(draw.kind).toBe("offered");
     const late = await takenTicket(c, c.areaA.id, c.member, { dueAt: at(50 * H) });
     const soon = await takenTicket(c, c.areaB.id, c.member, { dueAt: at(5 * H) });
     const paused = await takenTicket(c, c.areaB.id, c.member, { status: "extension_pending", dueAt: at(20 * H), pausedAt: at(H) });
     const sub = await takenTicket(c, c.areaA.id, c.member, { status: "submitted" });
-    await poolTicket(c, c.areaA.id);
-    const draw = await requestTicket(db, c.member, T0);
-    expect(draw.kind).toBe("offered");
 
     const v = await getMyTickets(db, c.member, at(MIN));
     expect(v.sprint).toEqual({ id: c.sprint.id, name: c.sprint.name });

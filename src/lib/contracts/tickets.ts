@@ -162,9 +162,21 @@ export type DrawResult =
   | { kind: "taken"; ticket: TicketCard; rejections: RejectionQuota }
   | { kind: "empty"; rejections: RejectionQuota };
 
+/**
+ * Geliştirici kararı (2026-11-19): bir kişinin aynı anda en fazla BİR aktif ticket'ı olur
+ * (IN_PROGRESS_STATUSES: alındı, ek süre bekliyor, geri çekme bekliyor). Bekleyen teklif de yeni istemeyi
+ * engeller (istek o teklifi döndürür). Teslim edilince (submitted) kişi serbesttir; değerlendirme beklenmez.
+ * Kontrol, kişi başına istek kilidi (`ticket-request:<userId>`) içinde yapılır; red hakkı bittiğinde doğrudan
+ * atama ve teklif kabulü de bu kurala uyar.
+ */
+export const MAX_ACTIVE_TICKETS = 1;
+export const ACTIVE_LIMIT_MESSAGE = "Önce elindeki ticket'ı teslim et; aynı anda tek ticket üzerinde çalışılır.";
+
 export type MyTicketsView = {
   /** Aktif sprint; yoksa ticket istenemez. */
   sprint: { id: string; name: string } | null;
+  /** Aktif ticket sınırı dolu mu (dolu ise "ticket iste" pasif, `ACTIVE_LIMIT_MESSAGE`). */
+  activeLimitReached: boolean;
   rejections: RejectionQuota;
   /** Bekleyen teklif (en fazla bir). */
   offer: OfferView | null;
