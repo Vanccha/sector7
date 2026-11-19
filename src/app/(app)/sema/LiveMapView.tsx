@@ -19,30 +19,6 @@ function initialsOf(name: string, max = 2): string {
   return chars.join("").toLocaleUpperCase("tr");
 }
 
-/** Noktanın (px,py) doğru parçasına (x0,y0)-(x1,y1) uzaklığı. */
-function segDist(px: number, py: number, x0: number, y0: number, x1: number, y1: number): number {
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  const t = clamp(((px - x0) * dx + (py - y0) * dy) / (dx * dx + dy * dy || 1), 0, 1);
-  return Math.hypot(px - (x0 + t * dx), py - (y0 + t * dy));
-}
-
-/** Kişi → alan şimşeği: iki uç arasında deterministik zikzak yol. */
-function zigzag(x0: number, y0: number, x1: number, y1: number): string {
-  const N = 9;
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  const len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len;
-  const ny = dx / len;
-  let d = `M${x0.toFixed(1)} ${y0.toFixed(1)}`;
-  for (let i = 1; i < N; i++) {
-    const t = i / N;
-    const off = (i % 2 ? 1 : -1) * 11;
-    d += ` L${(x0 + dx * t + nx * off).toFixed(1)} ${(y0 + dy * t + ny * off).toFixed(1)}`;
-  }
-  return `${d} L${x1.toFixed(1)} ${y1.toFixed(1)}`;
-}
 /** Hedef altıgen flaşı için çokgen (Dugum `hex` şekliyle aynı oranlar), merkeze göre. */
 const HEX_FLASH = [[-40, -70], [40, -70], [78.4, -14], [78.4, 14], [40, 70], [-40, 70], [-78.4, 14], [-78.4, -14]]
   .map(([x, y]) => `${x},${y}`)
@@ -144,6 +120,7 @@ export function LiveMapView({ map }: { map: LiveMap }) {
     for (const p of layout.people) m.set(`person:${p.id}`, p);
     return m;
   }, [layout]);
+  const linkByKey = useMemo(() => new Map(layout.links.map((l) => [l.key, l])), [layout]);
 
   const focus = hover ?? sel;
   const related = useMemo(() => {
@@ -217,24 +194,16 @@ export function LiveMapView({ map }: { map: LiveMap }) {
             >
               <svg className={styles.edges} width={layout.width} height={layout.height} aria-hidden="true">
                 {pairs.map((p) => {
-                  const a = pos.get(`area:${p.areaId}`);
-                  const q = pos.get(`person:${p.userId}`);
-                  if (!a || !q) return null;
+                  const lk = linkByKey.get(p.key);
+                  if (!lk) return null;
                   const on = !related || related.edges.has(p.key);
                   const fade = on ? "" : styles.faded;
                   return (
                     <g key={p.key}>
-                      <line className={`${styles.base} ${fade}`} x1={q.x} y1={q.y} x2={a.x} y2={a.y} vectorEffect="non-scaling-stroke" />
-                      <line
-                        className={`${p.allPaused ? styles.paused : styles.flow} ${fade}`}
-                        x1={q.x}
-                        y1={q.y}
-                        x2={a.x}
-                        y2={a.y}
-                        vectorEffect="non-scaling-stroke"
-                      />
+                      <path className={`${styles.base} ${fade}`} d={lk.d} vectorEffect="non-scaling-stroke" />
+                      <path className={`${p.allPaused ? styles.paused : styles.flow} ${fade}`} d={lk.d} vectorEffect="non-scaling-stroke" />
                       {p.links.length > 1 && (
-                        <g className={on ? "" : styles.faded} transform={`translate(${(q.x + a.x) / 2} ${(q.y + a.y) / 2})`}>
+                        <g className={on ? "" : styles.faded} transform={`translate(${lk.mid.x} ${lk.mid.y})`}>
                           <circle r="11" className={styles.badge} />
                           <text className={styles.badgeTx} textAnchor="middle" dominantBaseline="central">
                             {p.links.length}
@@ -304,26 +273,14 @@ export function LiveMapView({ map }: { map: LiveMap }) {
                   </button>
                 );
               })}
-              {/* Başka bir alanın altıgeninin altından geçen bağlantılar: düğümlerin üstünde ince, yarı saydam */}
-              <svg className={styles.overLayer} width={layout.width} height={layout.height} aria-hidden="true">
-                {pairs.map((p) => {
-                  const a = pos.get(`area:${p.areaId}`);
-                  const q = pos.get(`person:${p.userId}`);
-                  if (!a || !q) return null;
-                  const crosses = layout.areas.some((o) => o.id !== p.areaId && segDist(o.x, o.y, q.x, q.y, a.x, a.y) < 66);
-                  if (!crosses) return null;
-                  const on = !related || related.edges.has(p.key);
-                  return <line key={p.key} className={`${styles.over} ${on ? "" : styles.faded}`} x1={q.x} y1={q.y} x2={a.x} y2={a.y} />;
-                })}
-              </svg>
               <svg className={styles.fxLayer} width={layout.width} height={layout.height} aria-hidden="true" focusable="false">
                 {pairs
                   .filter((p) => bolts.includes(p.key))
                   .map((p) => {
+                    const lk = linkByKey.get(p.key);
                     const a = pos.get(`area:${p.areaId}`);
-                    const q = pos.get(`person:${p.userId}`);
-                    if (!a || !q) return null;
-                    const d = zigzag(q.x, q.y, a.x, a.y);
+                    if (!lk || !a) return null;
+                    const d = lk.d;
                     return (
                       <g key={p.key} className={styles.boltOn}>
                         <path d={d} pathLength={1} className={styles.boltGlow} />

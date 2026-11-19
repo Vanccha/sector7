@@ -151,6 +151,9 @@
   overflow: visible;
   pointer-events: none;
 }
+.edges path {
+  fill: none;
+}
 .base {
   stroke: var(--edge);
   stroke-width: 1.5;
@@ -306,16 +309,3 @@
   }
 }
 
-.overLayer {
-  position: absolute;
-  inset: 0;
-  overflow: visible;
-  pointer-events: none;
-  z-index: 3;
-}
-.over {
-  stroke: var(--ac-tx);
-  stroke-width: 1;
-  stroke-opacity: 0.4;
-  transition: opacity 0.25s;
-}
