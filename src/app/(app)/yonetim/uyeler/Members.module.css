@@ -1,7 +1,7 @@
 .page { display: flex; flex-direction: column; gap: 16px; width: 100%; min-width: 0; }
 .search { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
 .search button { min-height: 44px; }
-.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .tabs a { min-height: 44px; display: inline-flex; align-items: center; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-items: start; }
 @media (min-width: 900px) { .list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 16px; } }

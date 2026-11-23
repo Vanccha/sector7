@@ -6,7 +6,7 @@
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
 }
 .tabs a {
   min-height: 44px;
