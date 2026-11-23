@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth/client";
 import styles from "../public.module.css";
+import login from "./Login.module.css";
 
 const BAD_CREDENTIALS = "Kullanıcı adı ya da şifre hatalı.";
 
-export function LoginForm() {
+export function LoginForm({ notice = null }: { notice?: string | null }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -18,10 +19,14 @@ export function LoginForm() {
     setBusy(true);
     setError(null);
     try {
-      const res = await authClient.signIn.username({
-        username: String(fd.get("username") ?? "").trim().toLowerCase(),
-        password: String(fd.get("password") ?? ""),
-      });
+      const res = await authClient.signIn.username(
+        {
+          username: String(fd.get("username") ?? "").trim().toLowerCase(),
+          password: String(fd.get("password") ?? ""),
+        },
+        // "Beni hatırla": sunucu yalnız bu başlıkla cihaz token'ı üretir (şifre istemcide saklanmaz).
+        fd.get("remember") === "on" ? { headers: { "x-remember-device": "1" } } : undefined,
+      );
       if (res.error) {
         const st = res.error.status;
         setError(
@@ -77,7 +82,17 @@ export function LoginForm() {
             required
           />
         </div>
+        <label className={login.remember}>
+          <input type="checkbox" name="remember" />
+          <span className={login.box} aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M3 8.5l3.2 3L13 4.5" />
+            </svg>
+          </span>
+          Beni hatırla
+        </label>
         <div aria-live="polite">
+          {!error && notice && <p className="notice">{notice}</p>}
           {error && (
             <p className="notice notice--hot" role="alert">
               {error}

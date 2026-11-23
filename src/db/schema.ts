@@ -198,6 +198,33 @@ export const passwordTokens = pgTable(
   (t) => [index("password_tokens_user_idx").on(t.userId)],
 );
 
+/**
+ * "Beni hatırla" cihazları: tarayıcıdaki httpOnly çerezde ham token, burada yalnız SHA-256 özeti.
+ * Her kullanımda token yenilenir (aynı satır), süre kayar. Şifre değişince / pasifleştirmede silinir.
+ */
+export const rememberedDevices = pgTable(
+  "remembered_devices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    /** Son yenilemeden önceki token'ın özeti: iki sekme yarışında kısa süre (bir kez) kabul edilir. */
+    previousTokenHash: text("previous_token_hash"),
+    rotatedAt: ts("rotated_at"),
+    createdAt: createdAt(),
+    lastUsedAt: ts("last_used_at"),
+    expiresAt: ts("expires_at").notNull(),
+    userAgent: text("user_agent"),
+  },
+  (t) => [
+    index("remembered_devices_user_idx").on(t.userId),
+    index("remembered_devices_prev_idx").on(t.previousTokenHash),
+    index("remembered_devices_expires_idx").on(t.expiresAt),
+  ],
+);
+
 /* ------------------------------------------------------------------ */
 /* Sprint, hedef, roadmap                                              */
 /* ------------------------------------------------------------------ */

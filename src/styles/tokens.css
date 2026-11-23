@@ -133,3 +133,9 @@
     --gutter: 32px;
   }
 }
+
+@media (min-width: 1600px) {
+  :root {
+    --gutter: 48px;
+  }
+}

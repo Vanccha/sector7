@@ -1,0 +1,95 @@
+/* Giriş ekranı: "Beni hatırla" kutusu ve hatırlanan hesap görünümü. */
+
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  align-self: flex-start;
+  cursor: pointer;
+  color: var(--tx2);
+  font-size: 14px;
+}
+/* Gerçek input erişilebilir kalır, görsel kutu yanındaki span'dır. */
+.remember input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+.box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.box svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.remember:hover .box {
+  border-color: var(--btn-line);
+}
+.remember input:checked + .box {
+  background: var(--ac);
+  border-color: var(--ac);
+  color: var(--on-ac);
+}
+.remember input:checked + .box svg {
+  opacity: 1;
+}
+.remember input:focus-visible + .box {
+  outline: 2px solid var(--ac-tx);
+  outline-offset: 3px;
+}
+
+.remembered {
+  align-items: center;
+  text-align: center;
+  padding-block: 32px 24px;
+}
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--panel2);
+  color: var(--tx);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 0 0 2px var(--ac-tx),
+    0 0 0 6px var(--panel),
+    0 0 18px 4px rgba(var(--fx-glow), 0.35);
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 100%;
+}
+.name {
+  margin: 0;
+  font-size: 20px;
+  color: var(--tx);
+  overflow-wrap: anywhere;
+}
+.handle {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.alert {
+  width: 100%;
+  text-align: left;
+}

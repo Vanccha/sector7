@@ -1,0 +1,61 @@
+/* Karargah arka planı: içeriğin ARKASINDA, tıklamayı geçiren sabit katman.
+ * z-index:-1 → kök yığın bağlamında body zemininin üstünde, tüm içeriğin altında.
+ * "cover" eşlemesi saf CSS: sahne (stage) görüntü oranını korur, 1.04x büyütülür;
+ * canvas aynı sahnenin içinde olduğundan görüntü koordinatlarıyla hizalı kalır. */
+.hq-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--bg);
+  contain: strict;
+  /* sahne (stage) boyutu: cover çerçevesi; küp görüntüde ~(%57, %45) */
+  --bgw: max(104vw, calc(104vh * 2000 / 1116));
+  --bgh: calc(var(--bgw) * 1116 / 2000);
+}
+/* Dış sarmalayıcı: normalde kimlik (dönüşümsüz). Açılış sahnesi bunu küpe yakınlaştırır. */
+.hq-bg__cam {
+  position: absolute;
+  inset: 0;
+  transform-origin: calc(50% + var(--bgw) * 0.07) calc(50% - var(--bgh) * 0.05);
+}
+.hq-bg__stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(104vw, calc(104vh * 2000 / 1116));
+  aspect-ratio: 2000 / 1116;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+.hq-bg__img,
+.hq-bg__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: blur(1.8px);
+}
+/* Poster her zaman altta; video ilk kare hazır olunca üstüne yumuşakça biner. */
+.hq-bg__video {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.hq-bg__video.is-ready {
+  opacity: 1;
+}
+/* Genel karartma: panel ve metinler baskın kalır. */
+.hq-bg__dim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 14%, transparent);
+}
+/* Orta içerik kolonu en sakin. */
+.hq-bg__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 55% 75% at 50% 48%, color-mix(in srgb, var(--bg) 34%, transparent) 0%, color-mix(in srgb, var(--bg) 8%, transparent) 60%, color-mix(in srgb, var(--bg) 26%, transparent) 100%);
+}
