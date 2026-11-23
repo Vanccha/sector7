@@ -94,6 +94,8 @@ export const setAreaManagerSchema = z.object({ areaId: id, managerId: id.nullabl
 /** confirm=false iken aktif ticket varsa arşivlemez, uyarı döner. */
 export const archiveAreaSchema = z.object({ areaId: id, confirm: z.boolean().default(false) });
 export const areaIdSchema = z.object({ areaId: id });
+/** Yalnız hiç geçmişi olmayan (boş) alan kalıcı silinir. */
+export const deleteAreaSchema = z.object({ areaId: id });
 
 // Sprintler (yalnız ana yönetici)
 export const createSprintSchema = z.object({
@@ -193,6 +195,10 @@ export type AreaRow = {
 
 /** archiveArea sonucu: aktif ticket varsa ve onay yoksa arşivlemez. */
 export type ArchiveResult = { archived: true } | { archived: false; activeTicketCount: number };
+
+/** Silmeyi engelleyen bağımlılıklar (yalnız sıfırdan büyük olanlar döner). */
+export type AreaDeleteBlockers = Partial<Record<"tickets" | "goals" | "roadmaps" | "members" | "messages", number>>;
+export type DeleteAreaResult = { deleted: true } | { deleted: false; blockers: AreaDeleteBlockers };
 
 export type SprintRow = {
   id: string;

@@ -130,7 +130,7 @@ export const areas = pgTable("areas", {
   description: text("description").notNull().default(""),
   /** Alan yöneticisi. Bir alanın tek yöneticisi olur; bir kişi birden çok alanı yönetebilir. */
   managerId: uuid("manager_id").references((): AnyPgColumn => user.id),
-  /** Alan silinmez, arşivlenir. */
+  /** Geçmişi olan alan silinmez, arşivlenir; yalnız boş alan silinebilir (deleteArea). */
   archivedAt: ts("archived_at"),
   /** Aşama 7.5: alanın GitHub deposu (org içindeki ad, ör. "alan-tasarim"). Boşsa alan senkron dışı. */
   githubRepo: text("github_repo"),

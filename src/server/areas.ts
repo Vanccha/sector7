@@ -1,7 +1,7 @@
 /** Alan yönetimi (yalnız ana yönetici). Next.js'e bağımlı değildir. */
 import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import type { DB, DbOrTx } from "@/db";
-import { areas, channels, tickets, user } from "@/db/schema";
+import { areas, auditLog, channelReads, channels, goals, messages, roadmaps, tickets, user } from "@/db/schema";
 import { audit } from "@/lib/audit";
 import { requireMainAdmin } from "@/lib/auth/guards";
 import type { Actor } from "@/lib/contracts/actor";
@@ -11,10 +11,13 @@ import {
   archiveAreaSchema,
   areaIdSchema,
   createAreaSchema,
+  deleteAreaSchema,
   setAreaManagerSchema,
   updateAreaSchema,
+  type AreaDeleteBlockers,
   type AreaRow,
   type ArchiveResult,
+  type DeleteAreaResult,
   type UserOption,
 } from "@/lib/contracts/plan";
 import { getAreaOrThrow, iso } from "./plan-common";
@@ -187,5 +190,45 @@ export async function unarchiveArea(db: DB, actor: Actor | null, raw: unknown): 
       entityId: area.id,
       areaId: area.id,
     });
+  });
+}
+
+/**
+ * Hiç geçmişi olmayan alanı kalıcı siler. Ticket, hedef, roadmap, ana alanı bu olan üye ya da kanalında
+ * mesaj varsa silmez; sıfırdan büyük sayaçları `blockers` olarak döner. Yönetici ataması ve GitHub depo
+ * eşlemesi engel değildir. Mesajlar hiçbir zaman silinmez; yalnız mesajsız kanal ve okunma kayıtları gider.
+ */
+export async function deleteArea(db: DB, actor: Actor | null, raw: unknown): Promise<DeleteAreaResult> {
+  const a = requireMainAdmin(actor);
+  const input = deleteAreaSchema.parse(raw);
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select id from areas where id = ${input.areaId} for update`);
+    const area = await getAreaOrThrow(tx, input.areaId);
+    const one = async (q: Promise<{ n: number }[]>) => (await q)[0]?.n ?? 0;
+    const areaChannels = tx.select({ id: channels.id }).from(channels).where(eq(channels.areaId, area.id));
+    const found = {
+      tickets: await one(tx.select({ n: count() }).from(tickets).where(eq(tickets.areaId, area.id))),
+      goals: await one(tx.select({ n: count() }).from(goals).where(eq(goals.areaId, area.id))),
+      roadmaps: await one(tx.select({ n: count() }).from(roadmaps).where(eq(roadmaps.areaId, area.id))),
+      members: await one(tx.select({ n: count() }).from(user).where(eq(user.homeAreaId, area.id))),
+      messages: await one(tx.select({ n: count() }).from(messages).where(inArray(messages.channelId, areaChannels))),
+    };
+    const blockers: AreaDeleteBlockers = {};
+    for (const [k, n] of Object.entries(found)) if (n > 0) blockers[k as keyof AreaDeleteBlockers] = n;
+    if (Object.keys(blockers).length > 0) return { deleted: false, blockers };
+
+    await tx.delete(channelReads).where(inArray(channelReads.channelId, areaChannels));
+    await tx.delete(channels).where(eq(channels.areaId, area.id));
+    // Denetim kayıtları silinmez; yalnız silinen alana bağlantıları koparılır (entityId'de kimlik kalır).
+    await tx.update(auditLog).set({ areaId: null }).where(eq(auditLog.areaId, area.id));
+    await tx.delete(areas).where(eq(areas.id, area.id));
+    await audit(tx, {
+      actorId: a.id,
+      action: "area.delete",
+      entityType: "area",
+      entityId: area.id,
+      data: { areaId: area.id, name: area.name, archived: area.archivedAt !== null },
+    });
+    return { deleted: true } as const;
   });
 }

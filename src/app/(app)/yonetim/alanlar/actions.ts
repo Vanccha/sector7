@@ -4,9 +4,9 @@ import { db } from "@/db";
 import { runAction } from "@/lib/action";
 import { getActor } from "@/lib/auth/session";
 import type { ActionResult } from "@/lib/contracts/errors";
-import type { ArchiveResult } from "@/lib/contracts/plan";
+import type { ArchiveResult, DeleteAreaResult } from "@/lib/contracts/plan";
 import { setAreaRepo } from "@/server/github/admin";
-import { archiveArea, createArea, setAreaManager, unarchiveArea, updateArea } from "@/server/areas";
+import { archiveArea, createArea, deleteArea, setAreaManager, unarchiveArea, updateArea } from "@/server/areas";
 
 const PATH = "/yonetim/alanlar";
 
@@ -65,5 +65,13 @@ export async function setAreaRepoAction(input: { areaId: string; repo: string })
     await setAreaRepo(db, await getActor(), input);
     revalidatePath(PATH);
     return undefined;
+  });
+}
+
+export async function deleteAreaAction(input: { areaId: string }): Promise<ActionResult<DeleteAreaResult>> {
+  return runAction(async () => {
+    const r = await deleteArea(db, await getActor(), input);
+    if (r.deleted) revalidatePath(PATH);
+    return r;
   });
 }
