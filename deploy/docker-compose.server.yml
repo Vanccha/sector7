@@ -1,0 +1,59 @@
+# Paylaşımlı sunucu (host nginx + başka docker projeleri) için: Caddy YOK, hiçbir şey dışarı açılmaz.
+# Uygulama yalnız 127.0.0.1:${APP_PORT:-18600}'de dinler; host nginx buraya ters vekil olur (deploy/nginx-allspark.conf).
+# Veritabanı yalnız proje ağında (db:5432) erişilir; ağ ve volume adları proje adıyla (sector7) ayrıdır.
+# Kullanım (sunucuda, proje kökünde):
+#   docker compose -f deploy/docker-compose.server.yml --env-file .env up -d --build
+name: sector7
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER gerekli}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD gerekli}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB gerekli}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: ..
+      target: migrator
+    image: sector7-migrator
+    restart: "no"
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: ..
+      target: runner
+    image: sector7-app
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      UPLOAD_DIR: /app/uploads
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+    ports:
+      - "127.0.0.1:${APP_PORT:-18600}:3000"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  dbdata:
+  uploads:
