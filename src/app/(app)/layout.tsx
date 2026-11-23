@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { HqBackground } from "@/components/shell/HqBackground";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { requirePageActor } from "@/lib/auth/session";
 import { getRequestSprint } from "@/lib/current-sprint-request";
@@ -16,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
   return (
     <div className="app-shell">
+      <HqBackground />
       <LiveCountsProvider userId={actor.id} initialMessages={unreadMessages} initialNotifications={unreadNotifications}>
         <a href="#icerik" className="skip-link">
           İçeriğe geç

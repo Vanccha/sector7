@@ -13,7 +13,7 @@
 .unread { min-width: 24px; padding: 0 7px; text-align: center; background: var(--ac-tx); color: var(--bg); font-size: 12px; font-weight: 700; line-height: 22px; }
 .empty { margin: 0; color: var(--mut); font-size: 14px; }
 
-.chatPage { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 860px; margin-inline: auto; min-width: 0; height: calc(100dvh - 150px); min-height: 420px; }
+.chatPage { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: none; min-width: 0; height: calc(100dvh - 150px); min-height: 420px; }
 .chatHead { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .chatHead h1 { margin: 0; font-size: 20px; overflow-wrap: anywhere; }
 .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 13px; color: var(--mut); }

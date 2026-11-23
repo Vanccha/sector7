@@ -27,7 +27,7 @@ export function navFor(actor: Actor): NavItem[] {
 export function AppHeader({ actor, sprint }: { actor: Actor; sprint: SprintView | null }) {
   const roles = rolesOf(actor)
     .map((r) => ROLE_LABELS[r])
-    .join(" · ");
+    .join("\u2002·\u2002");
   return (
     <>
       <header className="app-header">

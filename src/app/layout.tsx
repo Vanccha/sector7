@@ -3,6 +3,8 @@ import { Saira } from "next/font/google";
 import { getRequestSprint } from "@/lib/current-sprint-request";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
+import { HangarIntro } from "@/components/shell/HangarIntro";
+import { HANGAR_INTRO_INIT } from "@/components/shell/hangar-intro-init";
 import "@/styles/globals.css";
 
 const saira = Saira({
@@ -39,9 +41,14 @@ export const dynamic = "force-dynamic";
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const sprint = await getRequestSprint();
   return (
-    <html lang="tr" data-theme={sprint?.theme ?? "blue"} className={saira.variable}>
+    // suppressHydrationWarning: HANGAR_INTRO_INIT, <html data-intro> / class değerlerini boyamadan önce yazar.
+    <html lang="tr" data-theme={sprint?.theme ?? "blue"} className={saira.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: HANGAR_INTRO_INIT }} />
+      </head>
       <body>
         {children}
+        <HangarIntro />
         <ServiceWorkerRegistrar />
         <InstallPrompt />
       </body>

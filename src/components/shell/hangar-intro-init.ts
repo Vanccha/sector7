@@ -1,0 +1,2 @@
+/** <head> içinde boyamadan önce çalışan satır içi betik (HangarIntro.tsx açıklamasına bakın). */
+export const HANGAR_INTRO_INIT = `(function(){var d=document.documentElement,v="play";try{var s=sessionStorage.getItem("s7-intro");var f=/[?&]intro=1(&|$)/.test(location.search);if(s&&!f)v="seen";if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)v="seen"}catch(e){v="seen"}d.setAttribute("data-intro",v)})()`;

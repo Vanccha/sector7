@@ -10,8 +10,8 @@
 .app-main {
   flex: 1 1 auto;
   width: 100%;
-  max-width: 1280px; /* 1440'ta kenar boşluğu dengeli kalır; 1200'e göre iki sütunlu panolara ~80px daha yer verir */
-  margin: 0 auto;
+  max-width: none; /* tam genişlik: içerik tarayıcı genişliğine yayılır, kenar boşluğunu --gutter belirler */
+  margin: 0;
   min-width: 0;
   padding: 20px calc(var(--gutter) + var(--safe-r)) calc(48px + var(--bottom-nav-h)) calc(var(--gutter) + var(--safe-l));
 }
@@ -47,7 +47,7 @@
 /* Masaüstü: başlık içeriği ana kolonla hizalanır (arka plan tam genişlikte kalır). Temel kuralın ardından gelmeli; shorthand padding'i ezer. */
 @media (min-width: 721px) {
   .app-header {
-    padding-inline: max(calc(var(--gutter) + var(--safe-l)), calc((100% - 1280px) / 2 + var(--gutter)));
+    padding-inline: calc(var(--gutter) + var(--safe-l)) calc(var(--gutter) + var(--safe-r));
   }
 }
 /* Sol alttaki vurgu çizgisi yalnız mobilde: masaüstünde ilk sekmenin altına düşüp aktif sekme gibi görünüyordu. */
@@ -69,19 +69,32 @@
 .app-header__user {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 14px;
   font-size: 14px;
 }
+/* Kişi bloğu: ad ile rol satırı ayrık; iki yanında ince ayraç (zil | kişi | çıkış). */
 .app-header__who {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 5px;
   line-height: 1.2;
-  padding-right: 6px;
+  padding: 0 18px;
+  border-inline: 1px solid var(--line2);
+  letter-spacing: 0.02em;
 }
 .app-header__who small {
   font-size: 12px;
   color: var(--mut);
+  letter-spacing: 0.04em;
+}
+.btn-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-signout svg {
+  flex: none;
 }
 .app-header__nav {
   display: block;
@@ -417,7 +430,7 @@
 
 /* ------------------------------------------------------------
  * Sayfa genişliği sistemi (Aşama 7.2). Mobilde hepsi tek sütun, tam genişlik.
- *   .page            tam genişlik (.app-main 1280 kapı içinde), dikey akış
+ *   .page            tam genişlik (.app-main sınırsız), dikey akış
  *   .page--narrow    okuma/form sayfaları, ~720, ortalı
  *   .page--medium    liste sayfaları, ~860, ortalı
  *   .page-grid       kart ızgarası (min 320px sütun)
@@ -434,11 +447,12 @@
 .page--medium {
   margin-inline: auto;
 }
+/* Dar/orta sayfalar da tam genişlikte (eski 720/860px sınırı kaldırıldı) */
 .page--narrow {
-  max-width: 720px;
+  max-width: none;
 }
 .page--medium {
-  max-width: 860px;
+  max-width: none;
 }
 .page-grid {
   list-style: none;

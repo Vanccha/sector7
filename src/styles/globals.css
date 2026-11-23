@@ -75,6 +75,25 @@ textarea {
   font-size: 19px;
   letter-spacing: 0.16em;
 }
+.wordmark__all {
+  color: var(--tx);
+}
+.wordmark__spark {
+  color: var(--tx);
+}
+/* Ortalı (logodaki gibi) kullanım: işaret üstte, yazı altta, simetrik. */
+.brand--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+.brand--stacked .wordmark {
+  font-size: 30px;
+  /* letter-spacing son harften sonra da boşluk bırakır; ortalamayı bozmasın diye geri al */
+  margin-right: -0.16em;
+}
 .h-wide {
   font-stretch: 125%;
   font-weight: 700;
@@ -452,7 +471,14 @@ textarea {
   top: 2px;
   bottom: 2px;
   box-shadow: 0 0 10px var(--ac-tx);
-  animation: blinkL 1.4s steps(2) infinite;
+  /* Gerçek LED gibi: kademesiz (steps yok), yavaş açılıp yavaş sönen nefes; tarayıcı her karede akıcı çizer. */
+  animation: ledBreath 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: opacity, box-shadow;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dy.is-now::before {
+    animation: none;
+  }
 }
 
 .nav-link {
@@ -484,6 +510,25 @@ textarea {
 @keyframes blinkL {
   50% {
     opacity: 0.3;
+  }
+}
+/* LED nefesi: hızlıca ısınıp tepe parlaklıkta kısa süre kalır, sonra yavaşça söner (akkor/LED sürücü hissi). */
+@keyframes ledBreath {
+  0%,
+  100% {
+    opacity: 0.28;
+    box-shadow: 0 0 2px var(--ac-tx);
+    filter: brightness(0.85);
+  }
+  38% {
+    opacity: 1;
+    box-shadow: 0 0 16px 2px var(--ac-tx);
+    filter: brightness(1.25);
+  }
+  52% {
+    opacity: 1;
+    box-shadow: 0 0 14px 1px var(--ac-tx);
+    filter: brightness(1.2);
   }
 }
 @keyframes pop {
