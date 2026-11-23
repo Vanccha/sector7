@@ -12,6 +12,7 @@ import { requireMainAdmin } from "@/lib/auth/guards";
 import type { Actor } from "@/lib/contracts/actor";
 import { normalizeUsername, passwordSchema, TOKEN_TTL_HOURS, usernameSchema } from "@/lib/contracts/applications";
 import { AppError, conflict, invalidState, notFound } from "@/lib/contracts/errors";
+import { revokeRememberedDevices } from "./remembered-devices";
 
 export const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
@@ -92,6 +93,8 @@ export async function setCredentialPassword(
   } else {
     await db.insert(account).values({ userId, accountId: userId, providerId: "credential", password: hashed });
   }
+  // Şifre değişince "Beni hatırla" cihazları geçersiz olur.
+  await revokeRememberedDevices(db, userId);
 }
 
 /** Tek kullanımlık şifre bağlantısı üretir; ham token yalnız bir kez döner, veritabanında özeti saklanır. */
@@ -181,6 +184,7 @@ export async function issueResetLink(db: DB, actor: Actor | null, userId: string
     const [u] = await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1);
     if (!u) throw notFound("Kişi bulunamadı.");
     const link = await issuePasswordToken(tx, userId, "reset", a.id);
+    await revokeRememberedDevices(tx, userId);
     await audit(tx, {
       actorId: a.id,
       action: "user.reset_link_issued",

@@ -8,6 +8,7 @@ import { and, asc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle
 import type { DB, DbOrTx } from "@/db";
 import { areas, session, sprints, submissions, tickets, user } from "@/db/schema";
 import { audit } from "@/lib/audit";
+import { revokeRememberedDevices } from "./remembered-devices";
 import { canManageArea, requireActor, requireMainAdmin } from "@/lib/auth/guards";
 import type { Actor } from "@/lib/contracts/actor";
 import {
@@ -190,7 +191,10 @@ export async function setUserActive(db: DB, actor: Actor | null, raw: unknown, n
       if (!admins.some((x) => x.id !== u.id)) throw invalidState("Son aktif ana yönetici pasifleştirilemez.");
     }
     await tx.update(user).set({ active: input.active, updatedAt: now }).where(eq(user.id, u.id));
-    if (!input.active) await tx.delete(session).where(eq(session.userId, u.id));
+    if (!input.active) {
+      await tx.delete(session).where(eq(session.userId, u.id));
+      await revokeRememberedDevices(tx, u.id);
+    }
     await audit(tx, {
       actorId: a.id,
       action: input.active ? "user.activate" : "user.deactivate",

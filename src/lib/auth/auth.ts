@@ -4,6 +4,7 @@
  * - Dışarıdan kayıt kapalı: hesaplar başvuru onayıyla sunucuda açılır (src/server/accounts.ts).
  * - Şifreler argon2id ile saklanır.
  * - Giriş denemelerine IP başına hız sınırı (veritabanında tutulur).
+ * - "Beni hatırla": cihaz token'ı ile tek tıkla giriş (./remembered-device.ts).
  */
 import { betterAuth } from "better-auth";
 import { audit } from "@/lib/audit";
@@ -14,6 +15,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { createGithubAccountHooks } from "./github-link";
 import { hashPassword, verifyPassword } from "./password";
+import { REMEMBERED_SIGN_IN_PATH, rememberedDevice } from "./remembered-device";
 import { USERNAME_PATTERN } from "@/lib/contracts/applications";
 
 export const SIGN_IN_RATE_LIMIT = { window: 15 * 60, max: 10 } as const;
@@ -111,6 +113,8 @@ export const auth = betterAuth({
     max: 100,
     customRules: {
       "/sign-in/username": SIGN_IN_RATE_LIMIT,
+      // "Beni hatırla" ile tek tıkla giriş de aynı sınıra tabi.
+      [REMEMBERED_SIGN_IN_PATH]: SIGN_IN_RATE_LIMIT,
     },
   },
   plugins: [
@@ -121,6 +125,7 @@ export const auth = betterAuth({
       // Doğrulama küçük harfe çevrildikten sonra yapılır: "AYSE" ile "ayse" hesabına girilir.
       validationOrder: { username: "post-normalization" },
     }),
+    rememberedDevice(db),
     nextCookies(),
   ],
   databaseHooks: {
