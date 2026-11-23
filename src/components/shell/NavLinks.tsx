@@ -26,7 +26,7 @@ export function NavLinks({
   }
   const suffix = qs.toString() ? `?${qs}` : "";
   return (
-    <nav aria-label={label} className="nav-scroll" style={{ display: "flex", gap: 24, overflowX: "auto" }}>
+    <nav aria-label={label} className="nav-scroll" style={{ display: "flex", gap: 8, overflowX: "auto" }}>
       {items.map((it) => {
         const active = it.exact || it.href === "/" ? path === it.href : path.startsWith(it.href);
         return (

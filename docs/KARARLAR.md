@@ -76,6 +76,7 @@ Kısa, tarihli teknik kararlar. Sonraki oturumlar buradan başlar. İş kurallar
 - Düzenleyicideki düğüm konumu (`posX/posY`) yalnız görünümdür, denetim kaydına yazılmaz.
 - Bağımlılık düzenleyicisi: masaüstünde React Flow 12 (`@xyflow/react`), mobilde liste + "şundan sonra" seçimi; ikisi aynı action'ları kullanır.
 - Alan arşivlemede aktif ticket varsa sunucu önce uyarı döndürür (`archived: false, activeTicketCount`); yönetici onaylarsa ikinci çağrı `confirm: true` ile arşivler. Arşivli alanın yöneticiliği rol vermez ve planı düzenlenemez.
+- Geçmişi olan alan silinmez, arşivlenir; hiç geçmişi olmayan (ticket, roadmap, mesaj, üye yok) boş alan ana yönetici tarafından kalıcı silinebilir (yanlışlıkla açılanlar için). `deleteArea` tek transaction'da alanı kilitler; engel varsa `deleted: false, blockers` döner. Yönetici ataması ve depo eşlemesi engel değildir; mesajsız alan kanalı ve okunma kayıtları alanla gider, denetim kayıtları kalır (`areaId` boşalır).
 
 ### Ertelenen
 - Gerçek zamanlı iletişim (Aşama 4): PostgreSQL LISTEN/NOTIFY + Server-Sent Events planlanıyor (tek sunucu, ek servis yok).

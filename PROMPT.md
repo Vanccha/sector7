@@ -42,7 +42,7 @@ Bir kişi birden fazla role sahip olabilir (ana yönetici aynı zamanda alan yö
 
 ### Alanlar
 - Alanlar (departmanlar) sabit değildir. Ana yönetici panelinden istenen zaman alan eklenir, adı/açıklaması düzenlenir, alan arşivlenir ve alan yöneticisi atanır/değiştirilir.
-- Alan silinmez, arşivlenir: geçmiş ticket'ları, mesajları ve kayıtları korunur. Aktif ticket'ı olan bir alan arşivlenmeden önce uyarı gösterilir.
+- Geçmişi olan alan silinmez, arşivlenir; hiç geçmişi olmayan (ticket, roadmap, mesaj, üye yok) boş alan ana yönetici tarafından kalıcı silinebilir (yanlışlıkla açılanlar için). Arşivde geçmiş ticket'ları, mesajları ve kayıtları korunur. Aktif ticket'ı olan bir alan arşivlenmeden önce uyarı gösterilir.
 
 ### Sprint
 - Varsayılan süre 21 gün; ayarlardan değiştirilebilir (test aşamasında değişebilir).

@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { areas, channels } from "../../src/db/schema";
+import { areas, auditLog, channelReads, channels, goals, roadmaps } from "../../src/db/schema";
 import { loadActor } from "../../src/lib/auth/guards";
 import {
   archiveArea,
   createArea,
+  deleteArea,
   listAreas,
   listUserOptions,
   setAreaManager,
@@ -13,6 +14,7 @@ import {
 } from "../../src/server/areas";
 import { db, makeActor, makeActiveSprint, makeArea, makeMainAdmin, makeUser, resetDb } from "../helpers/db";
 import { expectCode } from "../helpers/errors";
+import { addMessages } from "../helpers/messaging";
 import { auditRows, getTicket, makeManagerActor, makeTicketRow } from "../helpers/plan";
 
 describe("alan yönetimi: yetki", () => {
@@ -161,5 +163,96 @@ describe("listUserOptions", () => {
     for (const o of opts) expect(Object.keys(o).sort()).toEqual(["id", "name", "username"]);
     expect(JSON.stringify(opts)).not.toContain("@example.com");
     expect(JSON.stringify(opts)).not.toContain("0532");
+  });
+});
+
+describe("alan silme (yalnız boş alan)", () => {
+  beforeEach(resetDb);
+
+  const chanOf = (areaId: string) => db.select().from(channels).where(eq(channels.areaId, areaId));
+  const areaOf = (areaId: string) => db.select().from(areas).where(eq(areas.id, areaId));
+
+  it("boş alanı kanalı ve okunma kayıtlarıyla siler, denetim kaydı düşer", async () => {
+    const admin = await makeMainAdmin();
+    const { id } = await createArea(db, admin, { name: "Yanlış açılan" });
+    const [ch] = await chanOf(id);
+    await db.insert(channelReads).values({ userId: admin.id, channelId: ch!.id, lastReadAt: new Date() });
+    await expect(deleteArea(db, admin, { areaId: id })).resolves.toEqual({ deleted: true });
+    expect(await areaOf(id)).toHaveLength(0);
+    expect(await chanOf(id)).toHaveLength(0);
+    expect(await db.select().from(channelReads)).toHaveLength(0);
+    const rows = await auditRows("area.delete", id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.data).toMatchObject({ areaId: id, name: "Yanlış açılan" });
+    // Eski kayıtlar korunur, alana bağlantısı kopar.
+    const created = await auditRows("area.create", id);
+    expect(created).toHaveLength(1);
+    expect(created[0]?.areaId).toBeNull();
+  });
+
+  it("yalnız yöneticisi olan ve arşivli boş alan silinir", async () => {
+    const admin = await makeMainAdmin();
+    const { area } = await makeManagerActor({ archivedAt: new Date(), githubRepo: "alan-x" });
+    await expect(deleteArea(db, admin, { areaId: area.id })).resolves.toEqual({ deleted: true });
+    expect(await areaOf(area.id)).toHaveLength(0);
+  });
+
+  it("ticket varsa (iptal edilmiş bile) silmez ve hiçbir şeyi değiştirmez", async () => {
+    const admin = await makeMainAdmin();
+    const sprint = await makeActiveSprint();
+    const { id } = await createArea(db, admin, { name: "Dolu" });
+    await makeTicketRow({ areaId: id, sprintId: sprint.id, createdById: admin.id, status: "cancelled" });
+    await expect(deleteArea(db, admin, { areaId: id })).resolves.toEqual({ deleted: false, blockers: { tickets: 1 } });
+    expect(await areaOf(id)).toHaveLength(1);
+    expect(await chanOf(id)).toHaveLength(1);
+    expect(await auditRows("area.delete")).toHaveLength(0);
+    expect((await auditRows("area.create", id))[0]?.areaId).toBe(id);
+  });
+
+  it("hedef ve roadmap engeller", async () => {
+    const admin = await makeMainAdmin();
+    const sprint = await makeActiveSprint();
+    const a = await makeArea();
+    const b = await makeArea();
+    await db.insert(goals).values({ sprintId: sprint.id, areaId: a.id, title: "Hedef", createdById: admin.id });
+    await db.insert(roadmaps).values({ sprintId: sprint.id, areaId: b.id });
+    await expect(deleteArea(db, admin, { areaId: a.id })).resolves.toEqual({ deleted: false, blockers: { goals: 1 } });
+    await expect(deleteArea(db, admin, { areaId: b.id })).resolves.toEqual({ deleted: false, blockers: { roadmaps: 1 } });
+  });
+
+  it("ana alanı bu olan üye engeller", async () => {
+    const admin = await makeMainAdmin();
+    const area = await makeArea();
+    await makeUser({ homeAreaId: area.id });
+    await expect(deleteArea(db, admin, { areaId: area.id })).resolves.toEqual({
+      deleted: false,
+      blockers: { members: 1 },
+    });
+    expect(await areaOf(area.id)).toHaveLength(1);
+  });
+
+  it("kanalında mesaj varsa engeller; çoklu engel sayaçları birlikte döner", async () => {
+    const admin = await makeMainAdmin();
+    const { id } = await createArea(db, admin, { name: "Konuşulan" });
+    const [ch] = await chanOf(id);
+    await addMessages(ch!.id, 3, { authorId: admin.id });
+    await makeUser({ homeAreaId: id });
+    await expect(deleteArea(db, admin, { areaId: id })).resolves.toEqual({
+      deleted: false,
+      blockers: { members: 1, messages: 3 },
+    });
+    expect(await chanOf(id)).toHaveLength(1);
+    expect(await db.select().from(auditLog).where(eq(auditLog.action, "area.delete"))).toHaveLength(0);
+  });
+
+  it("yetkisiz çağrı reddedilir, bilinmeyen id NOT_FOUND", async () => {
+    const admin = await makeMainAdmin();
+    const area = await makeArea();
+    const mgr = await makeManagerActor();
+    await expectCode(deleteArea(db, mgr.actor, { areaId: mgr.area.id }), "FORBIDDEN");
+    await expectCode(deleteArea(db, await makeActor(), { areaId: area.id }), "FORBIDDEN");
+    await expectCode(deleteArea(db, null, { areaId: area.id }), "UNAUTHENTICATED");
+    await expectCode(deleteArea(db, admin, { areaId: "00000000-0000-4000-8000-000000000000" }), "NOT_FOUND");
+    expect(await areaOf(area.id)).toHaveLength(1);
   });
 });

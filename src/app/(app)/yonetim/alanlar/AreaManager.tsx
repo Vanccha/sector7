@@ -1,10 +1,11 @@
 "use client";
 import { useState, useTransition } from "react";
 import type { ActionResult } from "@/lib/contracts/errors";
-import type { AreaRow, UserOption } from "@/lib/contracts/plan";
+import type { AreaDeleteBlockers, AreaRow, UserOption } from "@/lib/contracts/plan";
 import {
   archiveAreaAction,
   createAreaAction,
+  deleteAreaAction,
   setAreaManagerAction,
   setAreaRepoAction,
   unarchiveAreaAction,
@@ -144,6 +145,7 @@ function AreaCard({ area, users, github }: { area: AreaWithRepo; users: UserOpti
   const [description, setDescription] = useState(area.description);
   const [managerId, setManagerId] = useState(area.managerId ?? "");
   const [warn, setWarn] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [info, setInfo] = useState<string | null>(null);
@@ -196,6 +198,18 @@ function AreaCard({ area, users, github }: { area: AreaWithRepo; users: UserOpti
       if (!res.ok) fail(res);
       else if (!res.data.archived) setWarn(res.data.activeTicketCount);
       else setWarn(null);
+    });
+  }
+
+  function remove() {
+    reset();
+    startTransition(async () => {
+      const res = await deleteAreaAction({ areaId: area.id });
+      if (!res.ok) fail(res);
+      else if (!res.data.deleted) {
+        setConfirmDelete(false);
+        setError(blockerMessage(res.data.blockers));
+      }
     });
   }
 
@@ -352,13 +366,38 @@ function AreaCard({ area, users, github }: { area: AreaWithRepo; users: UserOpti
         </div>
       )}
 
-      {!editing && warn === null && (
+      {confirmDelete && (
+        <div className="notice notice--hot" role="alert">
+          <p>&apos;{area.name}&apos; alanı kalıcı olarak silinecek. Bu geri alınamaz.</p>
+          <div className={styles.actions}>
+            <button type="button" className="btn-line btn-danger" onClick={remove} disabled={pending}>
+              Evet, sil
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => setConfirmDelete(false)} disabled={pending}>
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!editing && warn === null && !confirmDelete && (
         <div className={styles.actions}>
           <button type="button" className="btn-line" onClick={() => setEditing(true)} disabled={pending}>
             Düzenle
           </button>
           <button type="button" className="btn-ghost" onClick={() => archive(false)} disabled={pending}>
             Arşivle
+          </button>
+          <button
+            type="button"
+            className="btn-ghost btn-danger"
+            onClick={() => {
+              reset();
+              setConfirmDelete(true);
+            }}
+            disabled={pending}
+          >
+            Sil
           </button>
         </div>
       )}
@@ -375,9 +414,26 @@ function AreaCard({ area, users, github }: { area: AreaWithRepo; users: UserOpti
   );
 }
 
+const BLOCKER_LABELS: Record<keyof AreaDeleteBlockers, string> = {
+  tickets: "ticket",
+  goals: "hedef",
+  roadmaps: "roadmap",
+  members: "üye",
+  messages: "mesaj",
+};
+
+function blockerMessage(b: AreaDeleteBlockers): string {
+  const parts = (Object.keys(BLOCKER_LABELS) as (keyof AreaDeleteBlockers)[])
+    .filter((k) => (b[k] ?? 0) > 0)
+    .map((k) => `${b[k]} ${BLOCKER_LABELS[k]}`);
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} ve ${parts[parts.length - 1]}` : (parts[0] ?? "kayıt");
+  return `Bu alan silinemez: ${list} var. Geçmişi korumak için alanı arşivle.`;
+}
+
 function ArchivedCard({ area }: { area: AreaRow }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const nameId = `area-${area.id}`;
 
   function restore() {
@@ -388,17 +444,54 @@ function ArchivedCard({ area }: { area: AreaRow }) {
     });
   }
 
+  function remove() {
+    setError(null);
+    startTransition(async () => {
+      const res = await deleteAreaAction({ areaId: area.id });
+      if (!res.ok) setError(res.error);
+      else if (!res.data.deleted) {
+        setConfirmDelete(false);
+        setError(blockerMessage(res.data.blockers));
+      }
+    });
+  }
+
   return (
     <article className={`cut-panel ${styles.card} ${styles.archived}`} aria-labelledby={nameId}>
       <h3 id={nameId} className={`h-wide ${styles.name}`}>
         {area.name}
       </h3>
       {area.description && <p className={styles.desc}>{area.description}</p>}
-      <div className={styles.actions}>
-        <button type="button" className="btn-line" onClick={restore} disabled={pending}>
-          Arşivden çıkar
-        </button>
-      </div>
+      {confirmDelete ? (
+        <div className="notice notice--hot" role="alert">
+          <p>&apos;{area.name}&apos; alanı kalıcı olarak silinecek. Bu geri alınamaz.</p>
+          <div className={styles.actions}>
+            <button type="button" className="btn-line btn-danger" onClick={remove} disabled={pending}>
+              Evet, sil
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => setConfirmDelete(false)} disabled={pending}>
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.actions}>
+          <button type="button" className="btn-line" onClick={restore} disabled={pending}>
+            Arşivden çıkar
+          </button>
+          <button
+            type="button"
+            className="btn-ghost btn-danger"
+            onClick={() => {
+              setError(null);
+              setConfirmDelete(true);
+            }}
+            disabled={pending}
+          >
+            Sil
+          </button>
+        </div>
+      )}
       <div aria-live="polite">
         {error && (
           <p className="notice notice--hot" role="alert">
